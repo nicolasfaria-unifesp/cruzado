@@ -62,20 +62,20 @@ function iniciarJogo() {
             position: relative;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
+            padding-top: 20px;
             min-height: 80vh;
             width: 100%;
+            box-sizing: border-box;
         }
 
         .historico-tentativas {
             position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
+            left: 30px;
+            top: 20px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            overflow: visible;
+            gap: 15px;
         }
 
         .tabuleiro-tentativa {
@@ -86,11 +86,11 @@ function iniciarJogo() {
         }
 
         .tabuleiro-tentativa.mini {
-            transform: scale(0.38);
-            transform-origin: left center;
-            width: 120px;
-            height: 120px;
-            margin-bottom: -70px;
+            transform: scale(0.42);
+            transform-origin: top left;
+            width: 130px;
+            height: 130px;
+            margin-bottom: 0px;
         }
 
         .letra {
