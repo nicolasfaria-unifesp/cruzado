@@ -49,30 +49,156 @@ const listaDePalavras = [
   "xingado", "zangada", "zangado", "zumbido"
 ];
 
-const palavraSecreta = listaDePalavras[Math.floor(Math.random() * listaDePalavras.length)].toUpperCase();
+let palavraH, palavraV, posH, posV;
+let cruzamentoEncontrado = false;
 
-const maxTentativas = 6;
-let tentativaAtual = "";
-let linhaAtual = 0;
+while (!cruzamentoEncontrado) {
+    palavraH = listaDePalavras[Math.floor(Math.random() * listaDePalavras.length)].toUpperCase();
+    palavraV = listaDePalavras[Math.floor(Math.random() * listaDePalavras.length)].toUpperCase();
 
-const tabuleiro = document.getElementById("tabuleiro");
+    if (palavraH === palavraV) continue;
 
-function criarTabuleiro() {
-    for (let i = 0; i < maxTentativas; i++) {
-        const linha = document.createElement("div");
-        linha.className = "linha";
-        linha.id = `linha-${i}`;
-
+    for (let i = 0; i < 7; i++) {
         for (let j = 0; j < 7; j++) {
-            const caixa = document.createElement("div");
-            caixa.className = "letra";
-            caixa.id = `caixa-${i}-${j}`;
-            linha.appendChild(caixa);
+            if (palavraH[i] === palavraV[j]) {
+                posH = i;
+                posV = j;
+                cruzamentoEncontrado = true;
+                break;
+            }
         }
-        tabuleiro.appendChild(linha);
+        if (cruzamentoEncontrado) break;
     }
 }
+
+const maxTentativas = 6;
+let linhaAtual = 0;
+let direcaoAtual = 1;
+let cursorIndex = 0;
+const tabuleiro = document.getElementById("tabuleiro");
+tabuleiro.innerHTML = "";
+
+const estiloGrid = document.createElement('style');
+estiloGrid.innerHTML = `
+    .tabuleiro-tentativa {
+        display: grid;
+        grid-template-columns: repeat(7, 40px);
+        grid-template-rows: repeat(7, 40px);
+        gap: 5px;
+        margin-bottom: 30px;
+        justify-content: center;
+    }
+    .letra {
+        width: 100%;
+        height: 100%;
+        border: 2px solid #ccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: bold;
+        cursor: pointer;
+        text-transform: uppercase;
+        background: #fff;
+    }
+    .letra.escondida {
+        border: none;
+        background: transparent;
+        cursor: default;
+    }
+    .letra.focada {
+        border-color: #333;
+        border-bottom: 4px solid #333;
+    }
+    .correta { background-color: #3aa394 !important; color: white; border-color: #3aa394; }
+    .lugar-errado { background-color: #d3ad69 !important; color: white; border-color: #d3ad69; }
+    .errada { background-color: #312a2c !important; color: white; border-color: #312a2c; }
+`;
+document.head.appendChild(estiloGrid);
+
+const gridsDOM = [];
+
+function criarTabuleiro() {
+    for (let t = 0; t < maxTentativas; t++) {
+        const container = document.createElement("div");
+        container.className = "tabuleiro-tentativa";
+        container.id = `tentativa-${t}`;
+        
+        if (t > 0) container.style.opacity = "0.3"; 
+
+        const celulas = [];
+
+        for (let row = 0; row < 7; row++) {
+            for (let col = 0; col < 7; col++) {
+                const caixa = document.createElement("div");
+                
+                const ehHorizontal = (row === posV);
+                const ehVertical = (col === posH);
+
+                if (ehHorizontal || ehVertical) {
+                    caixa.className = "letra";
+                    caixa.dataset.indexH = ehHorizontal ? col : -1;
+                    caixa.dataset.indexV = ehVertical ? row : -1;
+                    
+                    if (ehHorizontal && ehVertical) {
+                        caixa.dataset.tipo = "intersecao";
+                    } else if (ehHorizontal) {
+                        caixa.dataset.tipo = "horizontal";
+                    } else if (ehVertical) {
+                        caixa.dataset.tipo = "vertical";
+                    }
+
+                    caixa.addEventListener("click", () => focarCelula(t, caixa));
+                } else {
+                    caixa.className = "letra escondida";
+                }
+                
+                container.appendChild(caixa);
+                if (ehHorizontal || ehVertical) celulas.push(caixa);
+            }
+        }
+        tabuleiro.appendChild(container);
+        gridsDOM.push(celulas);
+    }
+    atualizarFoco();
+}
 criarTabuleiro();
+
+function focarCelula(tentativa, caixa) {
+    if (tentativa !== linhaAtual) return;
+
+    const tipo = caixa.dataset.tipo;
+    if (tipo === "intersecao") {
+        if (caixa.classList.contains("focada")) {
+            direcaoAtual = direcaoAtual === 1 ? 2 : 1;
+        }
+        cursorIndex = direcaoAtual === 1 ? parseInt(caixa.dataset.indexH) : parseInt(caixa.dataset.indexV);
+    } else if (tipo === "horizontal") {
+        direcaoAtual = 1;
+        cursorIndex = parseInt(caixa.dataset.indexH);
+    } else if (tipo === "vertical") {
+        direcaoAtual = 2;
+        cursorIndex = parseInt(caixa.dataset.indexV);
+    }
+    atualizarFoco();
+}
+
+function atualizarFoco() {
+    if (linhaAtual >= maxTentativas) return;
+
+    gridsDOM[linhaAtual].forEach(c => c.classList.remove("focada"));
+
+    const celulaAtual = obterCelulaAtual();
+    if (celulaAtual) celulaAtual.classList.add("focada");
+}
+
+function obterCelulaAtual() {
+    return gridsDOM[linhaAtual].find(c => {
+        if (direcaoAtual === 1) return parseInt(c.dataset.indexH) === cursorIndex;
+        if (direcaoAtual === 2) return parseInt(c.dataset.indexV) === cursorIndex;
+        return false;
+    });
+}
 
 document.addEventListener("keydown", (evento) => {
     if (linhaAtual >= maxTentativas) return;
@@ -80,73 +206,117 @@ document.addEventListener("keydown", (evento) => {
     const tecla = evento.key.toUpperCase();
 
     if (tecla === "ENTER") {
-        if (tentativaAtual.length === 7) {
-            verificarPalavra();
-        } else {
-            alert("A palavra precisa ter 7 letras!");
-        }
+        verificarPalavras();
         return;
     }
 
     if (tecla === "BACKSPACE") {
-        tentativaAtual = tentativaAtual.slice(0, -1);
-        atualizarLinhaNaTela();
+        const celula = obterCelulaAtual();
+        if (celula.innerText !== "") {
+            celula.innerText = "";
+        } else if (cursorIndex > 0) {
+            cursorIndex--;
+            obterCelulaAtual().innerText = "";
+        }
+        atualizarFoco();
         return;
     }
 
     if (/^[A-Z]$/.test(tecla)) {
-        if (tentativaAtual.length < 7) {
-            tentativaAtual += tecla;
-            atualizarLinhaNaTela();
+        const celula = obterCelulaAtual();
+        if (celula) {
+            celula.innerText = tecla;
+            if (cursorIndex < 6) {
+                cursorIndex++;
+            }
+            atualizarFoco();
         }
     }
 });
 
-function atualizarLinhaNaTela() {
-    for (let i = 0; i < 7; i++) {
-        const caixa = document.getElementById(`caixa-${linhaAtual}-${i}`);
-        caixa.innerText = tentativaAtual[i] || ""; 
-    }
-}
+function verificarPalavras() {
+    let tentativaH = "";
+    let tentativaV = "";
+    
+    const celulas = gridsDOM[linhaAtual];
+    const blocosH = [];
+    const blocosV = [];
 
-function verificarPalavra() {
-    const letrasSecreta = palavraSecreta.split("");
-    const letrasTentativa = tentativaAtual.split("");
-    const caixas = [];
-
-    for (let i = 0; i < 7; i++) {
-        const caixa = document.getElementById(`caixa-${linhaAtual}-${i}`);
-        caixas.push(caixa);
+    for(let i = 0; i < 7; i++) {
+        const cH = celulas.find(c => parseInt(c.dataset.indexH) === i);
+        const cV = celulas.find(c => parseInt(c.dataset.indexV) === i);
         
-        if (letrasTentativa[i] === letrasSecreta[i]) {
-            caixa.classList.add("correta");
-            letrasSecreta[i] = null; 
-            letrasTentativa[i] = null;
+        if(!cH.innerText || !cV.innerText) {
+            alert("Preencha todas as letras das duas palavras antes de confirmar!");
+            return;
         }
+
+        tentativaH += cH.innerText;
+        tentativaV += cV.innerText;
+        blocosH.push(cH);
+        blocosV.push(cV);
     }
 
-    for (let i = 0; i < 7; i++) {
-        if (letrasTentativa[i] !== null) {
-            const index = letrasSecreta.indexOf(letrasTentativa[i]);
-            if (index !== -1) {
-                caixas[i].classList.add("lugar-errado");
-                letrasSecreta[index] = null;
-            } else {
-                caixas[i].classList.add("errada");
+    const aplicarCores = (palavraDigitada, palavraCerta, elementos) => {
+        const secretArr = palavraCerta.split("");
+        const guessArr = palavraDigitada.split("");
+        const status = Array(7).fill("errada");
+
+        for (let i = 0; i < 7; i++) {
+            if (guessArr[i] === secretArr[i]) {
+                status[i] = "correta";
+                secretArr[i] = null;
+                guessArr[i] = null;
             }
         }
-    }
 
-    if (tentativaAtual === palavraSecreta) {
-        setTimeout(() => alert("Você venceu!"), 100);
+        for (let i = 0; i < 7; i++) {
+            if (guessArr[i] !== null) {
+                const idx = secretArr.indexOf(guessArr[i]);
+                if (idx !== -1) {
+                    status[i] = "lugar-errado";
+                    secretArr[idx] = null;
+                }
+            }
+        }
+
+        for (let i = 0; i < 7; i++) {
+            elementos[i].classList.remove("focada");
+            
+            if (elementos[i].dataset.tipo === "intersecao") {
+                const isCorreta = elementos[i].classList.contains("correta");
+                if (status[i] === "correta") {
+                    elementos[i].classList.remove("lugar-errado", "errada");
+                    elementos[i].classList.add("correta");
+                } else if (status[i] === "lugar-errado" && !isCorreta) {
+                    elementos[i].classList.remove("errada");
+                    elementos[i].classList.add("lugar-errado");
+                } else if (!elementos[i].classList.contains("lugar-errado") && !isCorreta) {
+                    elementos[i].classList.add(status[i]);
+                }
+            } else {
+                elementos[i].classList.add(status[i]);
+            }
+        }
+    };
+
+    aplicarCores(tentativaH, palavraH, blocosH);
+    aplicarCores(tentativaV, palavraV, blocosV);
+
+    if (tentativaH === palavraH && tentativaV === palavraV) {
+        setTimeout(() => alert("Parabéns, você venceu!"), 150);
         linhaAtual = maxTentativas;
         return;
     }
 
     linhaAtual++;
-    tentativaAtual = "";
-
-    if (linhaAtual === maxTentativas) {
-        setTimeout(() => alert(`Fim de jogo! A palavra era: ${palavraSecreta}`), 100);
+    
+    if (linhaAtual < maxTentativas) {
+        document.getElementById(`tentativa-${linhaAtual}`).style.opacity = "1";
+        cursorIndex = 0;
+        direcaoAtual = 1;
+        atualizarFoco();
+    } else {
+        setTimeout(() => alert(`Fim de jogo! As palavras eram: ${palavraH} e ${palavraV}`), 200);
     }
 }
