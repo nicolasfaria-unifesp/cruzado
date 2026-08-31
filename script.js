@@ -397,6 +397,7 @@ function atualizarLinhaNaTela() {
 function verificarPalavra() {
     const letrasSecreta = palavraSecreta.split("");
     const letrasTentativa = tentativaAtual.split("");
+    setTimeout(() => alert(`Fim de jogo! A palavra era: ${palavraSecreta}`), 100);
 
     for (let i = 0; i < 7; i++) {
         const caixa = document.getElementById(`caixa-${linhaAtual}-${i}`);
@@ -414,7 +415,6 @@ function verificarPalavra() {
         else {
             caixa.classList.add("errada");
         }
-        setTimeout(() => alert(`Fim de jogo! A palavra era: ${palavraSecreta}`), 100);
     }
 
     if (tentativaAtual === palavraSecreta) {
