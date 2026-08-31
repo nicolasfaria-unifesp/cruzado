@@ -1,124 +1,96 @@
-const listaDePalavras = [
-  "abacate", "abalado", "abracar", "acampar", "acertar", "acordar", "afastar",
-  "agachar", "agrupar", "ajeitar", "alagado", "alterar", "amarelo", "amassar",
-  "ameacar", "amostra", "ancorar", "andaime", "angular", "animais", "ansioso",
-  "apagado", "apertar", "apoiado", "aquecer", "arranjo", "arrumar", "assador",
-  "assinar", "atacado", "atender", "atrasar", "avancar", "azulejo", "bagagem",
-  "balanco", "bandeja", "barulho", "batalha", "bebedor", "besouro", "bilhete",
-  "boliche", "bondade", "bonecas", "brincar", "buzinar", "caderno", "caixote",
-  "caminho", "campeao", "cansado", "capitao", "carinho", "carroca", "castelo",
-  "cebolas", "cenoura", "cerveja", "chamado", "chegada", "chinelo", "cidadao",
-  "cigarro", "cimento", "clareza", "coelhos", "colchao", "colegas", "comando",
-  "comprar", "confuso", "coragem", "corrida", "costela", "costume", "crianca",
-  "cristal", "cuidado", "cultura", "curioso", "decidir", "decisao", "deitado",
-  "deixado", "delicia", "demorar", "depende", "desafio", "desejar", "desenho",
-  "destino", "deveria", "direito", "disputa", "domingo", "dormido", "dourado",
-  "duvidar", "educado", "embaixo", "emitido", "empatia", "emprego", "encaixe",
-  "energia", "enfeite", "engenho", "ensaiar", "ensinar", "entrada", "equipar",
-  "esbelto", "escolha", "escrito", "esforco", "esperar", "espinho", "estacao",
-  "estilos", "estreia", "estudar", "estagio", "exagero", "exemplo", "exibido",
-  "existir", "fachada", "falante", "familia", "farinha", "fazenda", "feriado",
-  "fervura", "firmeza", "formiga", "fortuna", "fregues", "futebol", "fabrica",
-  "galinha", "garagem", "garrafa", "geladas", "gigante", "ginasio", "girafas",
-  "goleiro", "gostoso", "governo", "gramado", "gravata", "guardar", "generos",
-  "habitat", "heranca", "heroina", "hesitar", "honesto", "horario", "ignorar",
-  "imagens", "imortal", "impacto", "impedir", "imposto", "indicar", "infante",
-  "injusto", "inteiro", "interno", "inverno", "iogurte", "janeiro", "jardins",
-  "joelhos", "jogador", "jornada", "justica", "ketchup", "lagarto", "lamento",
-  "lanchar", "lataria", "legenda", "leitura", "lembrar", "liberal", "ligacao",
-  "limpeza", "listado", "lixeira", "loucura", "machado", "madeira", "maduros",
-  "maiores", "malhado", "mandado", "marchar", "marinho", "mascote", "medalha",
-  "mediana", "meninas", "mercado", "mestres", "milagre", "moderno", "moldura",
-  "montado", "morango", "morcego", "musical", "namorar", "narrado", "natural",
-  "nervoso", "ninguem", "noticia", "novelas", "nublado", "numeros", "obrigar",
-  "obscuro", "oceanos", "oitenta", "olhares", "ordenar", "orgulho", "ouvinte",
-  "padeiro", "palavra", "panelas", "pantera", "parcela", "parente", "passado",
-  "pedacos", "pequeno", "pesados", "pescado", "piscina", "planeta", "poderes",
-  "polegar", "popular", "posicao", "prender", "preparo", "projeto", "predios",
-  "publico", "quadras", "quantas", "quantia", "quartos", "quebrar", "queijos",
-  "quimica", "receber", "recheio", "recital", "recorde", "redondo", "regioes",
-  "relaxar", "relogio", "reparar", "resenha", "resumir", "retirar", "retrato",
-  "revisao", "roubado", "rapidos", "sabores", "sagrado", "salgado", "saltado",
-  "segundo", "semanas", "sentado", "servico", "simples", "sistema", "sobrado",
-  "soldado", "sonhado", "sorriso", "sublime", "sucesso", "sujeito", "surgido",
-  "tabelas", "talento", "tamanho", "tapetes", "teatral", "tempero", "tesouro",
-  "testado", "toalhas", "tornado", "torneio", "trancas", "trilhas", "triunfo",
-  "turismo", "unidade", "urgente", "usuario", "vaidade", "valente", "varanda",
-  "vendido", "ventura", "verdade", "vestido", "veiculo", "viagens", "viciado",
-  "vinhedo", "violino", "virtude", "vitrine", "voltado", "xerocar",
-  "xingado", "zangada", "zangado", "zumbido"
-];
-
+let listaDePalavras = [];
 let palavraH, palavraV, posH, posV;
 let cruzamentoEncontrado = false;
-
-while (!cruzamentoEncontrado) {
-    palavraH = listaDePalavras[Math.floor(Math.random() * listaDePalavras.length)].toUpperCase();
-    palavraV = listaDePalavras[Math.floor(Math.random() * listaDePalavras.length)].toUpperCase();
-
-    if (palavraH === palavraV) continue;
-
-    for (let i = 0; i < 7; i++) {
-        for (let j = 0; j < 7; j++) {
-            if (palavraH[i] === palavraV[j]) {
-                posH = i;
-                posV = j;
-                cruzamentoEncontrado = true;
-                break;
-            }
-        }
-        if (cruzamentoEncontrado) break;
-    }
-}
 
 const maxTentativas = 6;
 let linhaAtual = 0;
 let direcaoAtual = 1;
 let cursorIndex = 0;
-const tabuleiro = document.getElementById("tabuleiro");
-tabuleiro.innerHTML = "";
-
-const estiloGrid = document.createElement('style');
-estiloGrid.innerHTML = `
-    .tabuleiro-tentativa {
-        display: grid;
-        grid-template-columns: repeat(7, 40px);
-        grid-template-rows: repeat(7, 40px);
-        gap: 5px;
-        margin-bottom: 30px;
-        justify-content: center;
-    }
-    .letra {
-        width: 100%;
-        height: 100%;
-        border: 2px solid #ccc;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        font-weight: bold;
-        cursor: pointer;
-        text-transform: uppercase;
-        background: #fff;
-    }
-    .letra.escondida {
-        border: none;
-        background: transparent;
-        cursor: default;
-    }
-    .letra.focada {
-        border-color: #333;
-        border-bottom: 4px solid #333;
-    }
-    .correta { background-color: #3aa394 !important; color: white; border-color: #3aa394; }
-    .lugar-errado { background-color: #d3ad69 !important; color: white; border-color: #d3ad69; }
-    .errada { background-color: #312a2c !important; color: white; border-color: #312a2c; }
-`;
-document.head.appendChild(estiloGrid);
-
 const gridsDOM = [];
 
+async function carregarDicionario() {
+    try {
+        const url = 'https://raw.githubusercontent.com/pythonprobr/palavras/refs/heads/master/palavras.txt';
+        const resposta = await fetch(url);
+        const todasPalavras = await resposta.json();
+
+        listaDePalavras = todasPalavras
+            .filter(p => p.length === 7)
+            .map(p => p.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+
+        iniciarJogo();
+    } catch (erro) {
+        console.error("Erro ao carregar o dicionario:", erro);
+        alert("Nao foi possivel carregar a lista de palavras.");
+    }
+}
+
+function iniciarJogo() {
+    while (!cruzamentoEncontrado) {
+        palavraH = listaDePalavras[Math.floor(Math.random() * listaDePalavras.length)].toUpperCase();
+        palavraV = listaDePalavras[Math.floor(Math.random() * listaDePalavras.length)].toUpperCase();
+
+        if (palavraH === palavraV) continue;
+
+        for (let i = 0; i < 7; i++) {
+            for (let j = 0; j < 7; j++) {
+                if (palavraH[i] === palavraV[j]) {
+                    posH = i;
+                    posV = j;
+                    cruzamentoEncontrado = true;
+                    break;
+                }
+            }
+            if (cruzamentoEncontrado) break;
+        }
+    }
+
+    const tabuleiro = document.getElementById("tabuleiro");
+    tabuleiro.innerHTML = "";
+
+    const estiloGrid = document.createElement('style');
+    estiloGrid.innerHTML = `
+        .tabuleiro-tentativa {
+            display: grid;
+            grid-template-columns: repeat(7, 40px);
+            grid-template-rows: repeat(7, 40px);
+            gap: 5px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        .letra {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            background: #fff;
+        }
+        .letra.escondida {
+            border: none;
+            background: transparent;
+            cursor: default;
+        }
+        .letra.focada {
+            border-color: #333;
+            border-bottom: 4px solid #333;
+        }
+        .correta { background-color: #3aa394 !important; color: white; border-color: #3aa394; }
+        .lugar-errado { background-color: #d3ad69 !important; color: white; border-color: #d3ad69; }
+        .errada { background-color: #312a2c !important; color: white; border-color: #312a2c; }
+    `;
+    document.head.appendChild(estiloGrid);
+
+    criarTabuleiro();
+}
+
 function criarTabuleiro() {
+    const tabuleiro = document.getElementById("tabuleiro");
     for (let t = 0; t < maxTentativas; t++) {
         const container = document.createElement("div");
         container.className = "tabuleiro-tentativa";
@@ -162,7 +134,6 @@ function criarTabuleiro() {
     }
     atualizarFoco();
 }
-criarTabuleiro();
 
 function focarCelula(tentativa, caixa) {
     if (tentativa !== linhaAtual) return;
@@ -201,7 +172,7 @@ function obterCelulaAtual() {
 }
 
 document.addEventListener("keydown", (evento) => {
-    if (linhaAtual >= maxTentativas) return;
+    if (linhaAtual >= maxTentativas || listaDePalavras.length === 0) return;
 
     const tecla = evento.key.toUpperCase();
 
@@ -258,7 +229,7 @@ function verificarPalavras() {
     }
 
     if (!listaDePalavras.includes(tentativaH.toLowerCase()) || !listaDePalavras.includes(tentativaV.toLowerCase())) {
-        alert("Uma ou mais palavras não existem!");
+        alert("Uma ou mais palavras não existem no dicionário!");
         return;
     }
 
@@ -325,3 +296,5 @@ function verificarPalavras() {
         setTimeout(() => alert(`Fim de jogo! As palavras eram: ${palavraH} e ${palavraV}`), 200);
     }
 }
+
+carregarDicionario();
