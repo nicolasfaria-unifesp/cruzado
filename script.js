@@ -59,23 +59,31 @@ function iniciarJogo() {
     const estiloGrid = document.createElement('style');
     estiloGrid.innerHTML = `
         #tabuleiro {
-            position: relative;
             display: flex;
-            justify-content: center;
+            flex-direction: row;
+            justify-content: space-between;
             align-items: flex-start;
-            padding-top: 20px;
-            min-height: 80vh;
+            padding: 20px;
             width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
             box-sizing: border-box;
         }
 
         .historico-tentativas {
-            position: absolute;
-            left: 30px;
-            top: 20px;
             display: flex;
             flex-direction: column;
             gap: 15px;
+            width: 160px;
+            flex-shrink: 0;
+        }
+
+        #area-entrada {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-top: 20px;
         }
 
         .tabuleiro-tentativa {
@@ -86,11 +94,10 @@ function iniciarJogo() {
         }
 
         .tabuleiro-tentativa.mini {
-            transform: scale(0.42);
-            transform-origin: top left;
-            width: 130px;
-            height: 130px;
-            margin-bottom: 0px;
+            grid-template-columns: repeat(7, 18px);
+            grid-template-rows: repeat(7, 18px);
+            gap: 2px;
+            width: fit-content;
         }
 
         .letra {
@@ -110,9 +117,14 @@ function iniciarJogo() {
             box-sizing: border-box;
         }
 
+        .mini .letra {
+            font-size: 10px;
+            border-width: 1px;
+        }
+
         .letra.escondida {
-            border: none;
-            background: transparent;
+            border: none !important;
+            background: transparent !important;
             cursor: default;
         }
 
@@ -303,8 +315,6 @@ function verificarPalavras() {
     let tentativaV = "";
     
     const celulasAtuais = gridsDOM[0];
-    const blocosH = [];
-    const blocosV = [];
 
     for(let i = 0; i < 7; i++) {
         const cH = celulasAtuais.find(c => parseInt(c.dataset.indexH) === i);
@@ -315,15 +325,8 @@ function verificarPalavras() {
             return;
         }
 
-        if (i === 0) {
-            tentativaH = "";
-            tentativaV = "";
-        }
-        
         tentativaH += cH.innerText;
         tentativaV += cV.innerText;
-        blocosH.push(cH);
-        blocosV.push(cV);
     }
 
     if (!listaDePalavras.includes(tentativaH.toLowerCase()) || !listaDePalavras.includes(tentativaV.toLowerCase())) {
