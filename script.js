@@ -61,6 +61,7 @@ function iniciarJogo() {
         #tabuleiro {
             position: relative;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 20px;
@@ -86,6 +87,7 @@ function iniciarJogo() {
             display: flex;
             justify-content: center;
             align-items: center;
+            margin-bottom: 30px;
         }
 
         .tabuleiro-tentativa {
@@ -138,23 +140,68 @@ function iniciarJogo() {
         .correta { background-color: #3aa394 !important; color: white; border-color: #3aa394; }
         .lugar-errado { background-color: #d3ad69 !important; color: white; border-color: #d3ad69; }
         .errada { background-color: #312a2c !important; color: white; border-color: #312a2c; }
+
+        /* Estilos do Teclado Virtual */
+        #teclado {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            margin-top: 20px;
+            user-select: none;
+        }
+
+        .linha-teclado {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tecla {
+            height: 50px;
+            min-width: 38px;
+            padding: 0 10px;
+            background-color: #4a4a4a;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.15s ease;
+        }
+
+        .tecla:hover {
+            background-color: #616161;
+        }
+
+        .tecla:active {
+            background-color: #333;
+        }
+
+        .tecla.especial {
+            min-width: 65px;
+            font-size: 13px;
+            background-color: #5d5d5d;
+        }
     `;
     document.head.appendChild(estiloGrid);
 
     criarTabuleiro();
 }
 
-document.addEventListener("keydown", (evento) => {
+// Processador unificado de entradas (teclado físico e virtual)
+function processarEntrada(tecla) {
     if (linhaAtual >= maxTentativas || listaDePalavras.length === 0) return;
 
-    const tecla = evento.key;
-
-    if (tecla === "Enter") {
+    if (tecla === "ENTER") {
         verificarPalavras();
         return;
     }
 
-    if (tecla === "Backspace") {
+    if (tecla === "BACKSPACE") {
         const celula = obterCelulaAtual();
         if (celula.innerText !== "") {
             celula.innerText = "";
@@ -166,44 +213,48 @@ document.addEventListener("keydown", (evento) => {
         return;
     }
 
-    if (tecla === "ArrowRight") {
+    if (tecla === "ARROWRIGHT") {
         direcaoAtual = 1;
         if (cursorIndex < 6) cursorIndex++;
         atualizarFoco();
         return;
     }
 
-    if (tecla === "ArrowLeft") {
+    if (tecla === "ARROWLEFT") {
         direcaoAtual = 1;
         if (cursorIndex > 0) cursorIndex--;
         atualizarFoco();
         return;
     }
 
-    if (tecla === "ArrowDown") {
+    if (tecla === "ARROWDOWN") {
         direcaoAtual = 2;
         if (cursorIndex < 6) cursorIndex++;
         atualizarFoco();
         return;
     }
 
-    if (tecla === "ArrowUp") {
+    if (tecla === "ARROWUP") {
         direcaoAtual = 2;
         if (cursorIndex > 0) cursorIndex--;
         atualizarFoco();
         return;
     }
 
-    if (/^[a-zA-Z]$/.test(tecla)) {
+    if (/^[A-Z]$/.test(tecla)) {
         const celula = obterCelulaAtual();
         if (celula) {
-            celula.innerText = tecla.toUpperCase();
+            celula.innerText = tecla;
             if (cursorIndex < 6) {
                 cursorIndex++;
             }
             atualizarFoco();
         }
     }
+}
+
+document.addEventListener("keydown", (evento) => {
+    processarEntrada(evento.key.toUpperCase());
 });
 
 function criarGridBase(tentativa, ehMini) {
@@ -250,6 +301,66 @@ function criarGridBase(tentativa, ehMini) {
     return { container, celulas };
 }
 
+function criarTecladoVirtual() {
+    const tecladoContainer = document.createElement("div");
+    tecladoContainer.id = "teclado";
+
+    const layout = [
+        ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+        ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+        ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "BACKSPACE"]
+    ];
+
+    layout.forEach(linha => {
+        const linhaDiv = document.createElement("div");
+        linhaDiv.className = "linha-teclado";
+
+        linha.forEach(tecla => {
+            const botao = document.createElement("button");
+            botao.className = "tecla";
+            
+            if (tecla === "ENTER") {
+                botao.innerText = "ENTER";
+                botao.classList.add("especial");
+            } else if (tecla === "BACKSPACE") {
+                botao.innerText = "⌫";
+                botao.classList.add("especial");
+            } else {
+                botao.innerText = tecla;
+            }
+
+            botao.dataset.key = tecla;
+            
+            botao.addEventListener("mousedown", (e) => e.preventDefault());
+            
+            botao.addEventListener("click", () => {
+                processarEntrada(tecla);
+            });
+
+            linhaDiv.appendChild(botao);
+        });
+
+        tecladoContainer.appendChild(linhaDiv);
+    });
+
+    return tecladoContainer;
+}
+
+function atualizarStatusTeclado(letra, novoStatus) {
+    const botao = document.querySelector(`.tecla[data-key="${letra}"]`);
+    if (!botao) return;
+
+    const prioridade = { "correta": 3, "lugar-errado": 2, "errada": 1 };
+    const statusAtual = botao.dataset.status || "";
+
+    if (!statusAtual || prioridade[novoStatus] > prioridade[statusAtual]) {
+        botao.dataset.status = novoStatus;
+        
+        botao.classList.remove("correta", "lugar-errado", "errada");
+        botao.classList.add(novoStatus);
+    }
+}
+
 function criarTabuleiro() {
     const tabuleiro = document.getElementById("tabuleiro");
     
@@ -272,6 +383,9 @@ function criarTabuleiro() {
 
     tabuleiro.appendChild(historico);
     tabuleiro.appendChild(areaEntrada);
+    
+    const teclado = criarTecladoVirtual();
+    tabuleiro.appendChild(teclado);
 
     atualizarFoco();
 }
@@ -380,19 +494,23 @@ function verificarPalavras() {
                 const stH = statusH[c];
                 const stV = statusV[r];
 
+                let statusFinal = "errada";
                 if (stH === "correta" || stV === "correta") {
-                    miniCell.classList.add("correta");
+                    statusFinal = "correta";
                 } else if (stH === "lugar-errado" || stV === "lugar-errado") {
-                    miniCell.classList.add("lugar-errado");
-                } else {
-                    miniCell.classList.add("errada");
+                    statusFinal = "lugar-errado";
                 }
+
+                miniCell.classList.add(statusFinal);
+                atualizarStatusTeclado(tentativaH[c], statusFinal);
             } else if (ehH) {
                 miniCell.innerText = tentativaH[c];
                 miniCell.classList.add(statusH[c]);
+                atualizarStatusTeclado(tentativaH[c], statusH[c]);
             } else if (ehV) {
                 miniCell.innerText = tentativaV[r];
                 miniCell.classList.add(statusV[r]);
+                atualizarStatusTeclado(tentativaV[r], statusV[r]);
             }
         }
     }
