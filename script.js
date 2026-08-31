@@ -64,12 +64,12 @@ function iniciarJogo() {
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 10px;
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
             box-sizing: border-box;
-            min-height: 500px;
+            min-height: auto;
         }
 
         .historico-tentativas {
@@ -87,7 +87,7 @@ function iniciarJogo() {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .tabuleiro-tentativa {
@@ -147,19 +147,24 @@ function iniciarJogo() {
             flex-direction: column;
             gap: 8px;
             align-items: center;
-            margin-top: 20px;
+            margin-top: 10px;
             user-select: none;
+            width: 100%;
+            max-width: 500px;
         }
 
         .linha-teclado {
             display: flex;
             gap: 6px;
+            width: 100%;
+            justify-content: center;
         }
 
         .tecla {
             height: 50px;
-            min-width: 38px;
-            padding: 0 10px;
+            min-width: 36px;
+            flex: 1;
+            padding: 0 4px;
             background-color: #4a4a4a;
             color: #fff;
             border: none;
@@ -173,18 +178,67 @@ function iniciarJogo() {
             transition: background-color 0.15s ease;
         }
 
-        .tecla:hover {
-            background-color: #616161;
-        }
-
-        .tecla:active {
-            background-color: #333;
-        }
+        .tecla:hover { background-color: #616161; }
+        .tecla:active { background-color: #333; }
 
         .tecla.especial {
-            min-width: 65px;
-            font-size: 13px;
+            flex: 1.5;
+            font-size: 12px;
             background-color: #5d5d5d;
+        }
+
+        @media (max-width: 768px) {
+            #tabuleiro {
+                padding: 10px 5px;
+            }
+
+            .historico-tentativas {
+                position: relative;
+                left: 0;
+                top: 0;
+                display: flex;
+                flex-direction: row;
+                overflow-x: auto;
+                width: 100%;
+                justify-content: flex-start;
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+                gap: 10px;
+            }
+
+            .historico-tentativas::-webkit-scrollbar {
+                height: 4px;
+            }
+            .historico-tentativas::-webkit-scrollbar-thumb {
+                background: #555;
+                border-radius: 2px;
+            }
+
+            .tabuleiro-tentativa.principal {
+                grid-template-columns: repeat(7, 11vw);
+                grid-template-rows: repeat(7, 11vw);
+                max-width: 350px;
+                max-height: 350px;
+                gap: 3px;
+            }
+
+            .letra {
+                font-size: 18px;
+            }
+
+            .linha-teclado {
+                gap: 4px;
+            }
+
+            .tecla {
+                height: 45px;
+                font-size: 14px;
+                padding: 0;
+            }
+
+            .tecla.especial {
+                font-size: 11px;
+            }
         }
     `;
     document.head.appendChild(estiloGrid);
