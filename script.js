@@ -10,7 +10,7 @@ const gridsDOM = [];
 
 async function carregarDicionario() {
     try {
-        const url = 'https://corsproxy.io/?' + encodeURIComponent('https://www.ime.usp.br/~pf/dicios/br-utf8.txt');
+        const url = 'br-utf8.txt';
         const resposta = await fetch(url);
         
         if (!resposta.ok) {
