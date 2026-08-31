@@ -69,6 +69,7 @@ function iniciarJogo() {
         .letra {
             width: 100%;
             height: 100%;
+            color: #ccc;
             border: 2px solid #ccc;
             display: flex;
             align-items: center;
@@ -85,8 +86,8 @@ function iniciarJogo() {
             cursor: default;
         }
         .letra.focada {
-            border-color: #333;
-            border-bottom: 4px solid #333;
+            border-color: #fff;
+            border-bottom: 4px solid #fff;
         }
         .correta { background-color: #3aa394 !important; color: white; border-color: #3aa394; }
         .lugar-errado { background-color: #d3ad69 !important; color: white; border-color: #d3ad69; }
@@ -96,6 +97,68 @@ function iniciarJogo() {
 
     criarTabuleiro();
 }
+
+document.addEventListener("keydown", (evento) => {
+    if (linhaAtual >= maxTentativas || listaDePalavras.length === 0) return;
+
+    const tecla = evento.key;
+
+    if (tecla === "Enter") {
+        verificarPalavras();
+        return;
+    }
+
+    if (tecla === "Backspace") {
+        const celula = obterCelulaAtual();
+        if (celula.innerText !== "") {
+            celula.innerText = "";
+        } else if (cursorIndex > 0) {
+            cursorIndex--;
+            obterCelulaAtual().innerText = "";
+        }
+        atualizarFoco();
+        return;
+    }
+
+    if (tecla === "ArrowRight") {
+        direcaoAtual = 1;
+        if (cursorIndex < 6) cursorIndex++;
+        atualizarFoco();
+        return;
+    }
+
+    if (tecla === "ArrowLeft") {
+        direcaoAtual = 1;
+        if (cursorIndex > 0) cursorIndex--;
+        atualizarFoco();
+        return;
+    }
+
+    if (tecla === "ArrowDown") {
+        direcaoAtual = 2;
+        if (cursorIndex < 6) cursorIndex++;
+        atualizarFoco();
+        return;
+    }
+
+    if (tecla === "ArrowUp") {
+        direcaoAtual = 2;
+        if (cursorIndex > 0) cursorIndex--;
+        atualizarFoco();
+        return;
+    }
+
+    if (/^[a-zA-Z]$/.test(tecla)) {
+        const celula = obterCelulaAtual();
+        if (celula) {
+            celula.innerText = tecla.toUpperCase();
+            if (cursorIndex < 6) {
+                cursorIndex++;
+            }
+            atualizarFoco();
+        }
+    }
+});
 
 function criarTabuleiro() {
     const tabuleiro = document.getElementById("tabuleiro");
@@ -178,40 +241,6 @@ function obterCelulaAtual() {
         return false;
     });
 }
-
-document.addEventListener("keydown", (evento) => {
-    if (linhaAtual >= maxTentativas || listaDePalavras.length === 0) return;
-
-    const tecla = evento.key.toUpperCase();
-
-    if (tecla === "ENTER") {
-        verificarPalavras();
-        return;
-    }
-
-    if (tecla === "BACKSPACE") {
-        const celula = obterCelulaAtual();
-        if (celula.innerText !== "") {
-            celula.innerText = "";
-        } else if (cursorIndex > 0) {
-            cursorIndex--;
-            obterCelulaAtual().innerText = "";
-        }
-        atualizarFoco();
-        return;
-    }
-
-    if (/^[A-Z]$/.test(tecla)) {
-        const celula = obterCelulaAtual();
-        if (celula) {
-            celula.innerText = tecla;
-            if (cursorIndex < 6) {
-                cursorIndex++;
-            }
-            atualizarFoco();
-        }
-    }
-});
 
 function verificarPalavras() {
     let tentativaH = "";
