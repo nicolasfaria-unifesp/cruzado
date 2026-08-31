@@ -416,13 +416,15 @@ function verificarPalavra() {
         }
     }
 
-    setTimeout(() => alert(`Fim de jogo! A palavra era: ${palavraSecreta}`), 100);
+    setTimeout(() => alert(`teste 1 ${palavraSecreta}`), 100);
 
     if (tentativaAtual === palavraSecreta) {
         setTimeout(() => alert("Você venceu!"), 100);
         linhaAtual = maxTentativas;
         return;
     }
+
+    setTimeout(() => alert(`teste 2 ${palavraSecreta}`), 100);
 
     linhaAtual++;
     tentativaAtual = "";
