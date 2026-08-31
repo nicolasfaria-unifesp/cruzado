@@ -58,14 +58,39 @@ function iniciarJogo() {
 
     const estiloGrid = document.createElement('style');
     estiloGrid.innerHTML = `
+        #tabuleiro {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 40px;
+            padding: 20px;
+        }
+
+        .historico-tentativas {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
         .tabuleiro-tentativa {
             display: grid;
             grid-template-columns: repeat(7, 40px);
             grid-template-rows: repeat(7, 40px);
             gap: 5px;
-            margin-bottom: 30px;
             justify-content: center;
         }
+
+        .tabuleiro-tentativa.mini {
+            transform: scale(0.55);
+            transform-origin: top left;
+            width: 170px;
+            height: 170px;
+            margin-bottom: -70px;
+        }
+
         .letra {
             width: 100%;
             height: 100%;
@@ -79,16 +104,20 @@ function iniciarJogo() {
             cursor: pointer;
             text-transform: uppercase;
             background: #676767;
+            user-select: none;
         }
+
         .letra.escondida {
             border: none;
             background: transparent;
             cursor: default;
         }
+
         .letra.focada {
             border-color: #fff;
             border-bottom: 4px solid #fff;
         }
+
         .correta { background-color: #3aa394 !important; color: white; border-color: #3aa394; }
         .lugar-errado { background-color: #d3ad69 !important; color: white; border-color: #d3ad69; }
         .errada { background-color: #312a2c !important; color: white; border-color: #312a2c; }
@@ -160,54 +189,76 @@ document.addEventListener("keydown", (evento) => {
     }
 });
 
+function criarGridBase(tentativa, ehMini) {
+    const container = document.createElement("div");
+    container.className = `tabuleiro-tentativa ${ehMini ? 'mini' : 'principal'}`;
+    container.id = `tentativa-${tentativa}`;
+
+    const celulas = [];
+
+    for (let row = 0; row < 7; row++) {
+        for (let col = 0; col < 7; col++) {
+            const caixa = document.createElement("div");
+            
+            const ehHorizontal = (row === posV);
+            const ehVertical = (col === posH);
+
+            if (ehHorizontal || ehVertical) {
+                caixa.className = "letra";
+                caixa.dataset.indexH = ehHorizontal ? col : -1;
+                caixa.dataset.indexV = ehVertical ? row : -1;
+                
+                if (ehHorizontal && ehVertical) {
+                    caixa.dataset.tipo = "intersecao";
+                } else if (ehHorizontal) {
+                    caixa.dataset.tipo = "horizontal";
+                } else if (ehVertical) {
+                    caixa.dataset.tipo = "vertical";
+                }
+
+                if (!ehMini) {
+                    caixa.addEventListener("click", () => focarCelula(caixa));
+                }
+            } else {
+                caixa.className = "letra escondida";
+            }
+            
+            container.appendChild(caixa);
+            if (ehHorizontal || ehVertical) celulas.push(caixa);
+        }
+    }
+
+    return { container, celulas };
+}
+
 function criarTabuleiro() {
     const tabuleiro = document.getElementById("tabuleiro");
+    
+    const areaEntrada = document.createElement("div");
+    areaEntrada.id = "area-entrada";
+    
+    const historico = document.createElement("div");
+    historico.className = "historico-tentativas";
+    historico.id = "historico";
+
+    const gridPrincipal = criarGridBase(0, false);
+    areaEntrada.appendChild(gridPrincipal.container);
+    gridsDOM.push(gridPrincipal.celulas);
+
     for (let t = 0; t < maxTentativas; t++) {
-        const container = document.createElement("div");
-        container.className = "tabuleiro-tentativa";
-        container.id = `tentativa-${t}`;
-        
-        if (t > 0) container.style.opacity = "0.3"; 
-
-        const celulas = [];
-
-        for (let row = 0; row < 7; row++) {
-            for (let col = 0; col < 7; col++) {
-                const caixa = document.createElement("div");
-                
-                const ehHorizontal = (row === posV);
-                const ehVertical = (col === posH);
-
-                if (ehHorizontal || ehVertical) {
-                    caixa.className = "letra";
-                    caixa.dataset.indexH = ehHorizontal ? col : -1;
-                    caixa.dataset.indexV = ehVertical ? row : -1;
-                    
-                    if (ehHorizontal && ehVertical) {
-                        caixa.dataset.tipo = "intersecao";
-                    } else if (ehHorizontal) {
-                        caixa.dataset.tipo = "horizontal";
-                    } else if (ehVertical) {
-                        caixa.dataset.tipo = "vertical";
-                    }
-
-                    caixa.addEventListener("click", () => focarCelula(t, caixa));
-                } else {
-                    caixa.className = "letra escondida";
-                }
-                
-                container.appendChild(caixa);
-                if (ehHorizontal || ehVertical) celulas.push(caixa);
-            }
-        }
-        tabuleiro.appendChild(container);
-        gridsDOM.push(celulas);
+        const gridMini = criarGridBase(t, true);
+        gridMini.container.style.opacity = t === 0 ? "1" : "0.3";
+        historico.appendChild(gridMini.container);
     }
+
+    tabuleiro.appendChild(areaEntrada);
+    tabuleiro.appendChild(historico);
+
     atualizarFoco();
 }
 
-function focarCelula(tentativa, caixa) {
-    if (tentativa !== linhaAtual) return;
+function focarCelula(caixa) {
+    if (linhaAtual >= maxTentativas) return;
 
     const tipo = caixa.dataset.tipo;
     if (tipo === "intersecao") {
@@ -228,14 +279,14 @@ function focarCelula(tentativa, caixa) {
 function atualizarFoco() {
     if (linhaAtual >= maxTentativas) return;
 
-    gridsDOM[linhaAtual].forEach(c => c.classList.remove("focada"));
+    gridsDOM[0].forEach(c => c.classList.remove("focada"));
 
     const celulaAtual = obterCelulaAtual();
     if (celulaAtual) celulaAtual.classList.add("focada");
 }
 
 function obterCelulaAtual() {
-    return gridsDOM[linhaAtual].find(c => {
+    return gridsDOM[0].find(c => {
         if (direcaoAtual === 1) return parseInt(c.dataset.indexH) === cursorIndex;
         if (direcaoAtual === 2) return parseInt(c.dataset.indexV) === cursorIndex;
         return false;
@@ -246,13 +297,13 @@ function verificarPalavras() {
     let tentativaH = "";
     let tentativaV = "";
     
-    const celulas = gridsDOM[linhaAtual];
+    const celulasAtuais = gridsDOM[0];
     const blocosH = [];
     const blocosV = [];
 
     for(let i = 0; i < 7; i++) {
-        const cH = celulas.find(c => parseInt(c.dataset.indexH) === i);
-        const cV = celulas.find(c => parseInt(c.dataset.indexV) === i);
+        const cH = celulasAtuais.find(c => parseInt(c.dataset.indexH) === i);
+        const cV = celulasAtuais.find(c => parseInt(c.dataset.indexV) === i);
         
         if(!cH.innerText || !cV.innerText) {
             alert("Preencha todas as letras das duas palavras antes de confirmar!");
@@ -270,7 +321,10 @@ function verificarPalavras() {
         return;
     }
 
-    const aplicarCores = (palavraDigitada, palavraCerta, elementos) => {
+    const minicard = document.getElementById(`tentativa-${linhaAtual}`);
+    const minicardCelulas = Array.from(minicard.querySelectorAll(".letra:not(.escondida)"));
+
+    const aplicarCoresETransferir = (palavraDigitada, palavraCerta, elementosInput, eHorizontal) => {
         const secretArr = palavraCerta.split("");
         const guessArr = palavraDigitada.split("");
         const status = Array(7).fill("errada");
@@ -294,27 +348,32 @@ function verificarPalavras() {
         }
 
         for (let i = 0; i < 7; i++) {
-            elementos[i].classList.remove("focada");
+            const idxAttr = eHorizontal ? 'data-index-h' : 'data-index-v';
+            const miniEl = minicardCelulas.find(c => parseInt(c.getAttribute(idxAttr)) === i);
             
-            if (elementos[i].dataset.tipo === "intersecao") {
-                const isCorreta = elementos[i].classList.contains("correta");
-                if (status[i] === "correta") {
-                    elementos[i].classList.remove("lugar-errado", "errada");
-                    elementos[i].classList.add("correta");
-                } else if (status[i] === "lugar-errado" && !isCorreta) {
-                    elementos[i].classList.remove("errada");
-                    elementos[i].classList.add("lugar-errado");
-                } else if (!elementos[i].classList.contains("lugar-errado") && !isCorreta) {
-                    elementos[i].classList.add(status[i]);
+            if (miniEl) {
+                miniEl.innerText = guessArr[i] || palavraDigitada[i];
+                
+                if (miniEl.dataset.tipo === "intersecao") {
+                    const isCorreta = miniEl.classList.contains("correta");
+                    if (status[i] === "correta") {
+                        miniEl.classList.remove("lugar-errado", "errada");
+                        miniEl.classList.add("correta");
+                    } else if (status[i] === "lugar-errado" && !isCorreta) {
+                        miniEl.classList.remove("errada");
+                        miniEl.classList.add("lugar-errado");
+                    } else if (!miniEl.classList.contains("lugar-errado") && !isCorreta) {
+                        miniEl.classList.add(status[i]);
+                    }
+                } else {
+                    miniEl.classList.add(status[i]);
                 }
-            } else {
-                elementos[i].classList.add(status[i]);
             }
         }
     };
 
-    aplicarCores(tentativaH, palavraH, blocosH);
-    aplicarCores(tentativaV, palavraV, blocosV);
+    aplicarCoresETransferir(tentativaH, palavraH, blocosH, true);
+    aplicarCoresETransferir(tentativaV, palavraV, blocosV, false);
 
     if (tentativaH === palavraH && tentativaV === palavraV) {
         setTimeout(() => alert("Parabéns, você venceu!"), 150);
@@ -325,6 +384,11 @@ function verificarPalavras() {
     linhaAtual++;
     
     if (linhaAtual < maxTentativas) {
+        celulasAtuais.forEach(c => {
+            c.innerText = "";
+            c.className = c.className.replace(/correta|lugar-errado|errada/g, "").trim();
+        });
+        
         document.getElementById(`tentativa-${linhaAtual}`).style.opacity = "1";
         cursorIndex = 0;
         direcaoAtual = 1;
