@@ -77,7 +77,7 @@ function iniciarJogo() {
             font-weight: bold;
             cursor: pointer;
             text-transform: uppercase;
-            background: #fff;
+            background: #676767;
         }
         .letra.escondida {
             border: none;
