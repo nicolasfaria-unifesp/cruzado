@@ -10,7 +10,7 @@ const gridsDOM = [];
 
 async function carregarDicionario() {
     try {
-        const url = 'https://raw.githubusercontent.com/pythonprobr/palavras/master/palavras.txt';
+        const url = 'https://www.ime.usp.br/~pf/dicios/br-utf8.txt';
         const resposta = await fetch(url);
         
         if (!resposta.ok) {
