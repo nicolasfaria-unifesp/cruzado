@@ -414,6 +414,7 @@ function verificarPalavra() {
         else {
             caixa.classList.add("errada");
         }
+        setTimeout(() => alert(`Fim de jogo! A palavra era: ${palavraSecreta}`), 100);
     }
 
     if (tentativaAtual === palavraSecreta) {
