@@ -59,31 +59,33 @@ function iniciarJogo() {
     const estiloGrid = document.createElement('style');
     estiloGrid.innerHTML = `
         #tabuleiro {
+            position: relative;
             display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: flex-start;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
             box-sizing: border-box;
+            min-height: 500px;
         }
 
         .historico-tentativas {
-            display: flex;
-            flex-direction: column;
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(3, auto);
             gap: 15px;
-            width: 160px;
-            flex-shrink: 0;
+            width: fit-content;
         }
 
         #area-entrada {
-            flex-grow: 1;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding-top: 20px;
         }
 
         .tabuleiro-tentativa {
