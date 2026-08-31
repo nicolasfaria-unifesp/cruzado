@@ -59,20 +59,23 @@ function iniciarJogo() {
     const estiloGrid = document.createElement('style');
     estiloGrid.innerHTML = `
         #tabuleiro {
+            position: relative;
             display: flex;
-            flex-direction: row-reverse;
             justify-content: center;
-            align-items: flex-start;
-            gap: 40px;
-            padding: 20px;
+            align-items: center;
+            min-height: 80vh;
+            width: 100%;
         }
 
         .historico-tentativas {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            max-height: 80vh;
-            overflow-y: auto;
+            gap: 12px;
+            overflow: visible;
         }
 
         .tabuleiro-tentativa {
@@ -80,14 +83,13 @@ function iniciarJogo() {
             grid-template-columns: repeat(7, 40px);
             grid-template-rows: repeat(7, 40px);
             gap: 5px;
-            justify-content: center;
         }
 
         .tabuleiro-tentativa.mini {
-            transform: scale(0.55);
-            transform-origin: top left;
-            width: 170px;
-            height: 170px;
+            transform: scale(0.38);
+            transform-origin: left center;
+            width: 120px;
+            height: 120px;
             margin-bottom: -70px;
         }
 
@@ -105,6 +107,7 @@ function iniciarJogo() {
             text-transform: uppercase;
             background: #676767;
             user-select: none;
+            box-sizing: border-box;
         }
 
         .letra.escondida {
@@ -205,6 +208,8 @@ function criarGridBase(tentativa, ehMini) {
 
             if (ehHorizontal || ehVertical) {
                 caixa.className = "letra";
+                caixa.dataset.row = row;
+                caixa.dataset.col = col;
                 caixa.dataset.indexH = ehHorizontal ? col : -1;
                 caixa.dataset.indexV = ehVertical ? row : -1;
                 
@@ -251,8 +256,8 @@ function criarTabuleiro() {
         historico.appendChild(gridMini.container);
     }
 
-    tabuleiro.appendChild(areaEntrada);
     tabuleiro.appendChild(historico);
+    tabuleiro.appendChild(areaEntrada);
 
     atualizarFoco();
 }
@@ -310,6 +315,11 @@ function verificarPalavras() {
             return;
         }
 
+        if (i === 0) {
+            tentativaH = "";
+            tentativaV = "";
+        }
+        
         tentativaH += cH.innerText;
         tentativaV += cV.innerText;
         blocosH.push(cH);
@@ -322,9 +332,8 @@ function verificarPalavras() {
     }
 
     const minicard = document.getElementById(`tentativa-${linhaAtual}`);
-    const minicardCelulas = Array.from(minicard.querySelectorAll(".letra:not(.escondida)"));
 
-    const aplicarCoresETransferir = (palavraDigitada, palavraCerta, elementosInput, eHorizontal) => {
+    const calcularStatus = (palavraDigitada, palavraCerta) => {
         const secretArr = palavraCerta.split("");
         const guessArr = palavraDigitada.split("");
         const status = Array(7).fill("errada");
@@ -346,34 +355,42 @@ function verificarPalavras() {
                 }
             }
         }
-
-        for (let i = 0; i < 7; i++) {
-            const idxAttr = eHorizontal ? 'data-index-h' : 'data-index-v';
-            const miniEl = minicardCelulas.find(c => parseInt(c.getAttribute(idxAttr)) === i);
-            
-            if (miniEl) {
-                miniEl.innerText = guessArr[i] || palavraDigitada[i];
-                
-                if (miniEl.dataset.tipo === "intersecao") {
-                    const isCorreta = miniEl.classList.contains("correta");
-                    if (status[i] === "correta") {
-                        miniEl.classList.remove("lugar-errado", "errada");
-                        miniEl.classList.add("correta");
-                    } else if (status[i] === "lugar-errado" && !isCorreta) {
-                        miniEl.classList.remove("errada");
-                        miniEl.classList.add("lugar-errado");
-                    } else if (!miniEl.classList.contains("lugar-errado") && !isCorreta) {
-                        miniEl.classList.add(status[i]);
-                    }
-                } else {
-                    miniEl.classList.add(status[i]);
-                }
-            }
-        }
+        return status;
     };
 
-    aplicarCoresETransferir(tentativaH, palavraH, blocosH, true);
-    aplicarCoresETransferir(tentativaV, palavraV, blocosV, false);
+    const statusH = calcularStatus(tentativaH, palavraH);
+    const statusV = calcularStatus(tentativaV, palavraV);
+
+    for (let r = 0; r < 7; r++) {
+        for (let c = 0; c < 7; c++) {
+            const ehH = (r === posV);
+            const ehV = (c === posH);
+
+            if (!ehH && !ehV) continue;
+
+            const miniCell = minicard.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+            
+            if (ehH && ehV) {
+                miniCell.innerText = tentativaH[c];
+                const stH = statusH[c];
+                const stV = statusV[r];
+
+                if (stH === "correta" || stV === "correta") {
+                    miniCell.classList.add("correta");
+                } else if (stH === "lugar-errado" || stV === "lugar-errado") {
+                    miniCell.classList.add("lugar-errado");
+                } else {
+                    miniCell.classList.add("errada");
+                }
+            } else if (ehH) {
+                miniCell.innerText = tentativaH[c];
+                miniCell.classList.add(statusH[c]);
+            } else if (ehV) {
+                miniCell.innerText = tentativaV[r];
+                miniCell.classList.add(statusV[r]);
+            }
+        }
+    }
 
     if (tentativaH === palavraH && tentativaV === palavraV) {
         setTimeout(() => alert("Parabéns, você venceu!"), 150);
@@ -386,7 +403,7 @@ function verificarPalavras() {
     if (linhaAtual < maxTentativas) {
         celulasAtuais.forEach(c => {
             c.innerText = "";
-            c.className = c.className.replace(/correta|lugar-errado|errada/g, "").trim();
+            c.classList.remove("focada");
         });
         
         document.getElementById(`tentativa-${linhaAtual}`).style.opacity = "1";
