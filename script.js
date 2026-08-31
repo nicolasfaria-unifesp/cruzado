@@ -10,18 +10,26 @@ const gridsDOM = [];
 
 async function carregarDicionario() {
     try {
-        const url = 'https://raw.githubusercontent.com/pythonprobr/palavras/refs/heads/master/palavras.txt';
+        const url = 'https://raw.githubusercontent.com/pythonprobr/palavras/master/palavras.txt';
         const resposta = await fetch(url);
-        const todasPalavras = await resposta.json();
+        
+        if (!resposta.ok) {
+            throw new Error(`Erro HTTP: ${resposta.status}`);
+        }
 
-        listaDePalavras = todasPalavras
+        const texto = await resposta.text();
+        
+        listaDePalavras = texto
+            .split(/\r?\n/)
+            .map(p => p.trim())
             .filter(p => p.length === 7)
             .map(p => p.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
 
         iniciarJogo();
-    } catch (erro) {
+    } 
+    catch (erro) {
         console.error("Erro ao carregar o dicionario:", erro);
-        alert("Nao foi possivel carregar a lista de palavras.");
+        alert("Erro ao carregar o dicionário. Se estiver executando localmente, abra o HTML utilizando um servidor local (ex: Live Server).");
     }
 }
 
