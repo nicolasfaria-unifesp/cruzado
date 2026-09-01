@@ -214,6 +214,14 @@ function iniciarJogo(modo) {
     if (antigoEstilo) antigoEstilo.remove();
 
     estiloGrid.innerHTML = `
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
         #tabuleiro {
             position: relative;
             display: flex;
@@ -299,6 +307,7 @@ function iniciarJogo(modo) {
         .historico-tentativas::-webkit-scrollbar {
             display: none;
         }
+        
         .historico-tentativas {
             -ms-overflow-style: none;
             scrollbar-width: none;
@@ -315,8 +324,8 @@ function iniciarJogo(modo) {
 
         .tabuleiro-tentativa {
             display: grid;
-            grid-template-columns: repeat(7, min(5.5vh, 42px));
-            grid-template-rows: repeat(7, min(5.5vh, 42px));
+            grid-template-columns: repeat(7, min(5vh, 42px));
+            grid-template-rows: repeat(7, min(5vh, 42px));
             gap: 4px;
         }
 
