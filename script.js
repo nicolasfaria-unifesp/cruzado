@@ -7,8 +7,9 @@ let palavrasAtivas = [];
 let cruzamentos = [];
 let maxTentativas = 8;
 let linhaAtual = 0;
-let direcaoAtual = 1; // 1 = H, 2 = V
-let cursorIndex = 0;
+let direcaoAtual = 'H'; // 'H' ou 'V'
+let focoRow = 0;
+let focoCol = 0;
 const gridsDOM = [];
 
 let statusTecladoPorPalavra = {};
@@ -189,25 +190,39 @@ function iniciarJogo(modo) {
     else if (modo === 4) maxTentativas = 12;
 
     linhaAtual = 0;
-    cursorIndex = 0;
-    direcaoAtual = 1;
+    direcaoAtual = 'H';
     statusTecladoPorPalavra = {};
 
     gerarCruzamentoValido(numPalavrasAlvo);
+
+    const p1 = palavrasAtivas.find(p => p.orien === 'H') || palavrasAtivas[0];
+    if (p1.orien === 'H') {
+        focoRow = p1.fixedPos;
+        focoCol = 0;
+    } else {
+        focoRow = 0;
+        focoCol = p1.fixedPos;
+    }
 
     const tabuleiro = document.getElementById("tabuleiro");
     tabuleiro.innerHTML = "";
 
     const estiloGrid = document.createElement('style');
+    estiloGrid.id = "estilo-jogo";
+    
+    const antigoEstilo = document.getElementById("estilo-jogo");
+    if (antigoEstilo) antigoEstilo.remove();
+
     estiloGrid.innerHTML = `
         #tabuleiro {
             position: relative;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            padding: 10px;
+            padding: 15px 10px;
             width: 100%;
+            height: 100vh;
             max-width: 1200px;
             margin: 0 auto;
             box-sizing: border-box;
@@ -218,8 +233,17 @@ function iniciarJogo(modo) {
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            max-width: 500px;
-            margin-bottom: 15px;
+            max-width: 450px;
+            margin-bottom: 5px;
+        }
+
+        .titulo-modo {
+            color: #fff;
+            font-size: 26px;
+            font-weight: bold;
+            margin: 2px 0 10px 0;
+            text-align: center;
+            font-family: sans-serif;
         }
 
         .modos-container {
@@ -259,33 +283,42 @@ function iniciarJogo(modo) {
         .historico-tentativas {
             position: absolute;
             left: 20px;
-            top: 60px;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            max-height: 80vh;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 85vh;
             overflow-y: auto;
-            padding-right: 5px;
+            padding-right: 8px;
             width: fit-content;
+        }
+
+        .historico-tentativas::-webkit-scrollbar {
+            width: 6px;
+        }
+        .historico-tentativas::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 3px;
         }
 
         #area-entrada {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 20px;
+            flex-grow: 1;
         }
 
         .tabuleiro-tentativa {
             display: grid;
-            grid-template-columns: repeat(7, 40px);
-            grid-template-rows: repeat(7, 40px);
-            gap: 5px;
+            grid-template-columns: repeat(7, 48px);
+            grid-template-rows: repeat(7, 48px);
+            gap: 6px;
         }
 
         .tabuleiro-tentativa.mini {
-            grid-template-columns: repeat(7, 16px);
-            grid-template-rows: repeat(7, 16px);
+            grid-template-columns: repeat(7, 14px);
+            grid-template-rows: repeat(7, 14px);
             gap: 2px;
             width: fit-content;
         }
@@ -298,18 +331,20 @@ function iniciarJogo(modo) {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
             cursor: pointer;
             text-transform: uppercase;
             background: #676767;
             user-select: none;
             box-sizing: border-box;
+            border-radius: 4px;
         }
 
         .mini .letra {
-            font-size: 9px;
+            font-size: 8px;
             border-width: 1px;
+            border-radius: 1px;
         }
 
         .letra.escondida {
@@ -319,8 +354,9 @@ function iniciarJogo(modo) {
         }
 
         .letra.focada {
-            border-color: #fff;
-            border-bottom: 4px solid #fff;
+            border-color: #fff !important;
+            border-bottom: 5px solid #3aa394 !important;
+            background: #7a7a7a;
         }
 
         .correta { background-color: #3aa394 !important; color: white; border-color: #3aa394; }
@@ -331,9 +367,9 @@ function iniciarJogo(modo) {
         #teclado {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
-            margin-top: 10px;
+            margin-bottom: 10px;
             user-select: none;
             width: 100%;
             max-width: 500px;
@@ -347,8 +383,8 @@ function iniciarJogo(modo) {
         }
 
         .tecla {
-            height: 50px;
-            min-width: 36px;
+            height: 52px;
+            min-width: 34px;
             flex: 1;
             padding: 0 4px;
             background-color: #4a4a4a;
@@ -426,40 +462,47 @@ function iniciarJogo(modo) {
             font-size: 15px;
         }
 
-        @media (max-width: 768px) {
-            #tabuleiro { padding: 10px 5px; }
+        @media (max-width: 850px) {
+            #tabuleiro { padding: 5px; height: auto; }
 
             .historico-tentativas {
                 position: relative;
                 left: 0;
                 top: 0;
+                transform: none;
                 display: flex;
                 flex-direction: row;
                 overflow-x: auto;
                 width: 100%;
                 justify-content: flex-start;
-                padding-bottom: 10px;
-                margin-bottom: 15px;
-                gap: 10px;
+                padding-bottom: 8px;
+                margin-bottom: 10px;
+                max-height: none;
             }
 
             .tabuleiro-tentativa.principal {
-                grid-template-columns: repeat(7, 11vw);
-                grid-template-rows: repeat(7, 11vw);
-                max-width: 350px;
-                max-height: 350px;
-                gap: 3px;
+                grid-template-columns: repeat(7, 10vw);
+                grid-template-rows: repeat(7, 10vw);
+                max-width: 360px;
+                max-height: 360px;
+                gap: 4px;
             }
 
             .letra { font-size: 18px; }
             .linha-teclado { gap: 4px; }
-            .tecla { height: 45px; font-size: 14px; padding: 0; }
-            .tecla.especial { font-size: 11px; }
+            .tecla { height: 44px; font-size: 13px; }
         }
     `;
     document.head.appendChild(estiloGrid);
 
     criarTabuleiro();
+}
+
+function obterNomeModo(modo) {
+    if (modo === 2) return "Cruzado";
+    if (modo === 3) return "Trisais";
+    if (modo === 4) return "Quadras";
+    return "";
 }
 
 function exibirModal(titulo, htmlConteudo, textoBotao = "Fechar", callback = null) {
@@ -508,6 +551,37 @@ function exibirModalComoJogar() {
     exibirModal("Como Jogar", regras, "Entendi");
 }
 
+function celulaExiste(r, c) {
+    if (r < 0 || r >= 7 || c < 0 || c >= 7) return false;
+    const ehH = palavrasAtivas.some(p => p.orien === 'H' && p.fixedPos === r);
+    const ehV = palavrasAtivas.some(p => p.orien === 'V' && p.fixedPos === c);
+    return ehH || ehV;
+}
+
+function avancarNaDirecao() {
+    if (direcaoAtual === 'H') {
+        if (celulaExiste(focoRow, focoCol + 1)) {
+            focoCol++;
+        }
+    } else {
+        if (celulaExiste(focoRow + 1, focoCol)) {
+            focoRow++;
+        }
+    }
+}
+
+function recuarNaDirecao() {
+    if (direcaoAtual === 'H') {
+        if (celulaExiste(focoRow, focoCol - 1)) {
+            focoCol--;
+        }
+    } else {
+        if (celulaExiste(focoRow - 1, focoCol)) {
+            focoRow--;
+        }
+    }
+}
+
 function processarEntrada(tecla) {
     if (linhaAtual >= maxTentativas || listaDePalavrasOriginal.length === 0) return;
 
@@ -518,41 +592,50 @@ function processarEntrada(tecla) {
 
     if (tecla === "BACKSPACE") {
         const celula = obterCelulaAtual();
-        if (celula.innerText !== "") {
+        if (celula && celula.innerText !== "") {
             celula.innerText = "";
-        } else if (cursorIndex > 0) {
-            cursorIndex--;
-            obterCelulaAtual().innerText = "";
+        } else {
+            recuarNaDirecao();
+            const celulaAnterior = obterCelulaAtual();
+            if (celulaAnterior) celulaAnterior.innerText = "";
         }
         atualizarFoco();
         return;
     }
 
     if (tecla === "ARROWRIGHT") {
-        direcaoAtual = 1;
-        if (cursorIndex < 6) cursorIndex++;
-        atualizarFoco();
+        if (celulaExiste(focoRow, focoCol + 1)) {
+            focoCol++;
+            direcaoAtual = 'H';
+            atualizarFoco();
+        }
         return;
     }
 
     if (tecla === "ARROWLEFT") {
-        direcaoAtual = 1;
-        if (cursorIndex > 0) cursorIndex--;
-        atualizarFoco();
+        if (celulaExiste(focoRow, focoCol - 1)) {
+            focoCol--;
+            direcaoAtual = 'H';
+            atualizarFoco();
+        }
         return;
     }
 
     if (tecla === "ARROWDOWN") {
-        direcaoAtual = 2;
-        if (cursorIndex < 6) cursorIndex++;
-        atualizarFoco();
+        if (celulaExiste(focoRow + 1, focoCol)) {
+            focoRow++;
+            direcaoAtual = 'V';
+            atualizarFoco();
+        }
         return;
     }
 
     if (tecla === "ARROWUP") {
-        direcaoAtual = 2;
-        if (cursorIndex > 0) cursorIndex--;
-        atualizarFoco();
+        if (celulaExiste(focoRow - 1, focoCol)) {
+            focoRow--;
+            direcaoAtual = 'V';
+            atualizarFoco();
+        }
         return;
     }
 
@@ -560,9 +643,7 @@ function processarEntrada(tecla) {
         const celula = obterCelulaAtual();
         if (celula) {
             celula.innerText = tecla;
-            if (cursorIndex < 6) {
-                cursorIndex++;
-            }
+            avancarNaDirecao();
             atualizarFoco();
         }
     }
@@ -593,8 +674,6 @@ function criarGridBase(tentativa, ehMini) {
                 caixa.className = "letra";
                 caixa.dataset.row = r;
                 caixa.dataset.col = c;
-                caixa.dataset.indexH = ehH ? c : -1;
-                caixa.dataset.indexV = ehV ? r : -1;
 
                 if (ehH && ehV) {
                     caixa.dataset.tipo = "intersecao";
@@ -605,7 +684,7 @@ function criarGridBase(tentativa, ehMini) {
                 }
 
                 if (!ehMini) {
-                    caixa.addEventListener("click", () => focarCelula(caixa));
+                    caixa.addEventListener("click", () => focarCelulaPorPos(r, c));
                 }
             } else {
                 caixa.className = "letra escondida";
@@ -700,6 +779,12 @@ function atualizarStatusTecladoGradiente(letra, idxPalavra, novoStatus) {
 function criarTabuleiro() {
     const tabuleiro = document.getElementById("tabuleiro");
     
+    const topContainer = document.createElement("div");
+    topContainer.style.display = "flex";
+    topContainer.style.flexDirection = "column";
+    topContainer.style.alignItems = "center";
+    topContainer.style.width = "100%";
+
     const barMenu = document.createElement("div");
     barMenu.className = "bar-menu";
 
@@ -727,7 +812,14 @@ function criarTabuleiro() {
 
     barMenu.appendChild(modosContainer);
     barMenu.appendChild(btnAjuda);
-    tabuleiro.appendChild(barMenu);
+
+    const tituloModo = document.createElement("div");
+    tituloModo.className = "titulo-modo";
+    tituloModo.innerText = obterNomeModo(numPalavrasAlvo);
+
+    topContainer.appendChild(barMenu);
+    topContainer.appendChild(tituloModo);
+    tabuleiro.appendChild(topContainer);
 
     const areaEntrada = document.createElement("div");
     areaEntrada.id = "area-entrada";
@@ -756,22 +848,25 @@ function criarTabuleiro() {
     atualizarFoco();
 }
 
-function focarCelula(caixa) {
+function focarCelulaPorPos(r, c) {
     if (linhaAtual >= maxTentativas) return;
 
-    const tipo = caixa.dataset.tipo;
-    if (tipo === "intersecao") {
-        if (caixa.classList.contains("focada")) {
-            direcaoAtual = direcaoAtual === 1 ? 2 : 1;
+    if (focoRow === r && focoCol === c) {
+        const temH = palavrasAtivas.some(p => p.orien === 'H' && p.fixedPos === r);
+        const temV = palavrasAtivas.some(p => p.orien === 'V' && p.fixedPos === c);
+        if (temH && temV) {
+            direcaoAtual = direcaoAtual === 'H' ? 'V' : 'H';
         }
-        cursorIndex = direcaoAtual === 1 ? parseInt(caixa.dataset.indexH) : parseInt(caixa.dataset.indexV);
-    } else if (tipo === "horizontal") {
-        direcaoAtual = 1;
-        cursorIndex = parseInt(caixa.dataset.indexH);
-    } else if (tipo === "vertical") {
-        direcaoAtual = 2;
-        cursorIndex = parseInt(caixa.dataset.indexV);
+    } else {
+        focoRow = r;
+        focoCol = c;
+        const temH = palavrasAtivas.some(p => p.orien === 'H' && p.fixedPos === r);
+        const temV = palavrasAtivas.some(p => p.orien === 'V' && p.fixedPos === c);
+        
+        if (temH && !temV) direcaoAtual = 'H';
+        else if (temV && !temH) direcaoAtual = 'V';
     }
+
     atualizarFoco();
 }
 
@@ -784,11 +879,7 @@ function atualizarFoco() {
 }
 
 function obterCelulaAtual() {
-    return gridsDOM[0].find(c => {
-        if (direcaoAtual === 1) return parseInt(c.dataset.indexH) === cursorIndex;
-        if (direcaoAtual === 2) return parseInt(c.dataset.indexV) === cursorIndex;
-        return false;
-    });
+    return gridsDOM[0].find(c => parseInt(c.dataset.row) === focoRow && parseInt(c.dataset.col) === focoCol);
 }
 
 function verificarPalavras() {
@@ -920,8 +1011,18 @@ function verificarPalavras() {
         });
         
         document.getElementById(`tentativa-${linhaAtual}`).style.opacity = "1";
-        cursorIndex = 0;
-        direcaoAtual = 1;
+        
+        const p1 = palavrasAtivas.find(p => p.orien === 'H') || palavrasAtivas[0];
+        if (p1.orien === 'H') {
+            focoRow = p1.fixedPos;
+            focoCol = 0;
+            direcaoAtual = 'H';
+        } else {
+            focoRow = 0;
+            focoCol = p1.fixedPos;
+            direcaoAtual = 'V';
+        }
+
         atualizarFoco();
     } else {
         setTimeout(() => {
