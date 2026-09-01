@@ -13,7 +13,7 @@ let focoRow = 0;
 let focoCol = 0;
 const gridsDOM = [];
 
-let tempoCorrida = 180;
+let tempoCorrida = 180; // Padrão 3 min (em segundos)
 let timerInterval = null;
 let tempoRestante = 0;
 
@@ -993,7 +993,7 @@ function criarTabuleiro() {
     gridsDOM.length = 0;
     gridsDOM.push(gridPrincipal.celulas);
 
-    if (modoAtual !== 5 && modoAtual !== 8) {
+    if (modoAtual !== 5 && modoAtual !== 7 && modoAtual !== 8) {
         for (let t = 0; t < maxTentativas; t++) {
             const gridMini = criarGridBase(t, true);
             gridMini.container.style.opacity = t === 0 ? "1" : "0.3";
@@ -1106,10 +1106,11 @@ function verificarPalavras() {
         return { ...item, status };
     });
 
+    const historico = document.getElementById("historico");
+
     if (modoAtual === 5 || modoAtual === 8) {
-        const historico = document.getElementById("historico");
         if (modoAtual === 8) {
-            historico.innerHTML = "";
+            historico.innerHTML = ""; // Esconde tentativas anteriores no modo Inferno
         }
 
         const cardCegueta = document.createElement("div");
@@ -1167,14 +1168,59 @@ function verificarPalavras() {
 
         historico.appendChild(cardCegueta);
         historico.scrollTop = historico.scrollHeight;
-    } else {
-        if (modoAtual === 7) {
-            for (let i = 0; i < linhaAtual; i++) {
-                const prevCard = document.getElementById(`tentativa-${i}`);
-                if (prevCard) prevCard.style.display = "none";
+    } 
+    else if (modoAtual === 7) {
+        // Modo Memória: Apaga a tentativa anterior e substitui pela atual com todas as cores visíveis
+        historico.innerHTML = "";
+
+        const gridMini = criarGridBase(linhaAtual, true);
+
+        for (let r = 0; r < 7; r++) {
+            for (let c = 0; c < 7; c++) {
+                const miniCell = gridMini.container.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                if (!miniCell) continue;
+
+                const resH = resultados.find(res => res.palavraObj.orien === 'H' && res.palavraObj.fixedPos === r);
+                const resV = resultados.find(res => res.palavraObj.orien === 'V' && res.palavraObj.fixedPos === c);
+
+                if (resH && resV) {
+                    miniCell.innerText = resH.exibicao[c];
+                    const stH = resH.status[c];
+                    const stV = resV.status[r];
+
+                    let statusFinal = "errada";
+                    if (stH === "correta" || stV === "correta") {
+                        statusFinal = "correta";
+                    } 
+                    else if (stH === "lugar-errado" && stV === "lugar-errado") {
+                        statusFinal = "cruzamento-duplo";
+                    } 
+                    else if (stH === "lugar-errado" || stV === "lugar-errado") {
+                        statusFinal = "lugar-errado";
+                    }
+
+                    miniCell.classList.add(statusFinal);
+
+                    atualizarStatusTecladoGradiente(resH.exibicao[c], resH.palavraObj.id, stH);
+                    atualizarStatusTecladoGradiente(resV.exibicao[r], resV.palavraObj.id, stV);
+                } 
+                else if (resH) {
+                    miniCell.innerText = resH.exibicao[c];
+                    miniCell.classList.add(resH.status[c]);
+                    atualizarStatusTecladoGradiente(resH.exibicao[c], resH.palavraObj.id, resH.status[c]);
+                } 
+                else if (resV) {
+                    miniCell.innerText = resV.exibicao[r];
+                    miniCell.classList.add(resV.status[r]);
+                    atualizarStatusTecladoGradiente(resV.exibicao[r], resV.palavraObj.id, resV.status[r]);
+                }
             }
         }
 
+        historico.appendChild(gridMini.container);
+    } 
+    else {
+        // Modos padrões com histórico fixo
         const minicard = document.getElementById(`tentativa-${linhaAtual}`);
 
         for (let r = 0; r < 7; r++) {
@@ -1243,7 +1289,7 @@ function verificarPalavras() {
             c.classList.remove("focada");
         });
         
-        if (modoAtual !== 5 && modoAtual !== 8) {
+        if (modoAtual !== 5 && modoAtual !== 7 && modoAtual !== 8) {
             document.getElementById(`tentativa-${linhaAtual}`).style.opacity = "1";
         }
         
