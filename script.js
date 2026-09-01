@@ -220,12 +220,13 @@ function iniciarJogo(modo) {
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 10px;
+            padding: 10px;
             width: 100%;
             height: 100vh;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             box-sizing: border-box;
+            overflow: hidden;
         }
 
         .bar-menu {
@@ -234,14 +235,14 @@ function iniciarJogo(modo) {
             align-items: center;
             width: 100%;
             max-width: 450px;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
         }
 
         .titulo-modo {
             color: #fff;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: bold;
-            margin: 2px 0 10px 0;
+            margin: 2px 0 5px 0;
             text-align: center;
             font-family: sans-serif;
         }
@@ -256,7 +257,7 @@ function iniciarJogo(modo) {
             color: #aaa;
             border: 1px solid #555;
             border-radius: 4px;
-            padding: 6px 12px;
+            padding: 5px 12px;
             font-weight: bold;
             font-size: 13px;
             cursor: pointer;
@@ -273,33 +274,33 @@ function iniciarJogo(modo) {
             color: #fff;
             border: none;
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
         }
 
+        /* Histórico em 2 colunas, colado no canto esquerdo e sem scroll */
         .historico-tentativas {
             position: absolute;
-            left: 20px;
+            left: 5px;
             top: 50%;
             transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-height: 85vh;
-            overflow-y: auto;
-            padding-right: 8px;
+            display: grid;
+            grid-template-columns: repeat(2, auto);
+            gap: 6px 12px;
+            max-height: 90vh;
+            overflow: hidden;
             width: fit-content;
         }
 
         .historico-tentativas::-webkit-scrollbar {
-            width: 6px;
+            display: none;
         }
-        .historico-tentativas::-webkit-scrollbar-thumb {
-            background: #555;
-            border-radius: 3px;
+        .historico-tentativas {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
 
         #area-entrada {
@@ -311,11 +312,12 @@ function iniciarJogo(modo) {
 
         .tabuleiro-tentativa {
             display: grid;
-            grid-template-columns: repeat(7, 48px);
-            grid-template-rows: repeat(7, 48px);
-            gap: 6px;
+            grid-template-columns: repeat(7, 46px);
+            grid-template-rows: repeat(7, 46px);
+            gap: 5px;
         }
 
+        /* Minitabuleiro grande e legível */
         .tabuleiro-tentativa.mini {
             grid-template-columns: repeat(7, 14px);
             grid-template-rows: repeat(7, 14px);
@@ -331,7 +333,7 @@ function iniciarJogo(modo) {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             cursor: pointer;
             text-transform: uppercase;
@@ -367,24 +369,24 @@ function iniciarJogo(modo) {
         #teclado {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             user-select: none;
             width: 100%;
-            max-width: 500px;
+            max-width: 480px;
         }
 
         .linha-teclado {
             display: flex;
-            gap: 6px;
+            gap: 5px;
             width: 100%;
             justify-content: center;
         }
 
         .tecla {
-            height: 52px;
-            min-width: 34px;
+            height: 48px;
+            min-width: 30px;
             flex: 1;
             padding: 0 4px;
             background-color: #4a4a4a;
@@ -392,7 +394,7 @@ function iniciarJogo(modo) {
             border: none;
             border-radius: 4px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -463,7 +465,7 @@ function iniciarJogo(modo) {
         }
 
         @media (max-width: 850px) {
-            #tabuleiro { padding: 5px; height: auto; }
+            #tabuleiro { padding: 5px; height: auto; overflow: visible; }
 
             .historico-tentativas {
                 position: relative;
@@ -478,6 +480,11 @@ function iniciarJogo(modo) {
                 padding-bottom: 8px;
                 margin-bottom: 10px;
                 max-height: none;
+            }
+
+            .historico-tentativas::-webkit-scrollbar {
+                display: block;
+                height: 4px;
             }
 
             .tabuleiro-tentativa.principal {
