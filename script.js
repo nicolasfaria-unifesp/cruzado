@@ -236,15 +236,17 @@ function iniciarJogo(modo) {
             width: 100%;
             max-width: 450px;
             margin-bottom: 2px;
+            flex-shrink: 0;
         }
 
         .titulo-modo {
             color: #fff;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
-            margin: 2px 0 5px 0;
+            margin: 2px 0;
             text-align: center;
             font-family: sans-serif;
+            flex-shrink: 0;
         }
 
         .modos-container {
@@ -281,7 +283,6 @@ function iniciarJogo(modo) {
             cursor: pointer;
         }
 
-        /* Histórico em 2 colunas, colado no canto esquerdo e sem scroll */
         .historico-tentativas {
             position: absolute;
             left: 5px;
@@ -289,7 +290,7 @@ function iniciarJogo(modo) {
             transform: translateY(-50%);
             display: grid;
             grid-template-columns: repeat(2, auto);
-            gap: 6px 12px;
+            gap: 4px 8px;
             max-height: 90vh;
             overflow: hidden;
             width: fit-content;
@@ -308,19 +309,20 @@ function iniciarJogo(modo) {
             justify-content: center;
             align-items: center;
             flex-grow: 1;
+            min-height: 0;
+            padding: 5px 0;
         }
 
         .tabuleiro-tentativa {
             display: grid;
-            grid-template-columns: repeat(7, 46px);
-            grid-template-rows: repeat(7, 46px);
-            gap: 5px;
+            grid-template-columns: repeat(7, min(5.5vh, 42px));
+            grid-template-rows: repeat(7, min(5.5vh, 42px));
+            gap: 4px;
         }
 
-        /* Minitabuleiro grande e legível */
         .tabuleiro-tentativa.mini {
-            grid-template-columns: repeat(7, 14px);
-            grid-template-rows: repeat(7, 14px);
+            grid-template-columns: repeat(7, 12px);
+            grid-template-rows: repeat(7, 12px);
             gap: 2px;
             width: fit-content;
         }
@@ -333,7 +335,7 @@ function iniciarJogo(modo) {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: min(3vh, 20px);
             font-weight: bold;
             cursor: pointer;
             text-transform: uppercase;
@@ -344,7 +346,7 @@ function iniciarJogo(modo) {
         }
 
         .mini .letra {
-            font-size: 8px;
+            font-size: 7px;
             border-width: 1px;
             border-radius: 1px;
         }
@@ -357,7 +359,7 @@ function iniciarJogo(modo) {
 
         .letra.focada {
             border-color: #fff !important;
-            border-bottom: 5px solid #3aa394 !important;
+            border-bottom: 4px solid #3aa394 !important;
             background: #7a7a7a;
         }
 
@@ -369,32 +371,33 @@ function iniciarJogo(modo) {
         #teclado {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
             align-items: center;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
             user-select: none;
             width: 100%;
             max-width: 480px;
+            flex-shrink: 0;
         }
 
         .linha-teclado {
             display: flex;
-            gap: 5px;
+            gap: 4px;
             width: 100%;
             justify-content: center;
         }
 
         .tecla {
-            height: 48px;
-            min-width: 30px;
+            height: min(6vh, 42px);
+            min-width: 28px;
             flex: 1;
-            padding: 0 4px;
+            padding: 0 2px;
             background-color: #4a4a4a;
             color: #fff;
             border: none;
             border-radius: 4px;
             font-weight: bold;
-            font-size: 15px;
+            font-size: 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -407,7 +410,7 @@ function iniciarJogo(modo) {
 
         .tecla.especial {
             flex: 1.5;
-            font-size: 12px;
+            font-size: 11px;
             background-color: #5d5d5d;
         }
 
