@@ -1,15 +1,18 @@
 let listaDePalavrasOriginal = [];
 let listaDePalavrasNormalizada = [];
-let palavraH, palavraV, palavraHNorm, palavraVNorm, posH, posV;
-let cruzamentoEncontrado = false;
 
-const maxTentativas = 6;
+// Estado da Partida
+let numPalavrasAlvo = 2;
+let palavrasAtivas = [];
+let cruzamentos = [];
+let maxTentativas = 8;
 let linhaAtual = 0;
-let direcaoAtual = 1;
+let direcaoAtual = 1; // 1 = H, 2 = V
 let cursorIndex = 0;
 const gridsDOM = [];
 
-// Função auxiliar para remover acentos
+let statusTecladoPorPalavra = {};
+
 function normalizarTexto(str) {
     return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ç/g, "c");
 }
@@ -24,7 +27,6 @@ async function carregarDicionario() {
         }
 
         const texto = await resposta.text();
-        
         const palavrasFiltradas = texto
             .split(/\r?\n/)
             .map(p => p.trim())
@@ -33,39 +35,165 @@ async function carregarDicionario() {
         listaDePalavrasOriginal = palavrasFiltradas.map(p => p.toUpperCase());
         listaDePalavrasNormalizada = palavrasFiltradas.map(p => normalizarTexto(p));
 
-        iniciarJogo();
+        iniciarJogo(2);
     } 
     catch (erro) {
-        console.error("Erro ao carregar o dicionario:", erro);
+        console.error("Erro ao carregar o dicionário:", erro);
         alert("Erro ao carregar o dicionário. Se estiver executando localmente, abra o HTML utilizando um servidor local (ex: Live Server).");
     }
 }
 
-function iniciarJogo() {
-    cruzamentoEncontrado = false;
-    while (!cruzamentoEncontrado) {
-        const idxH = Math.floor(Math.random() * listaDePalavrasOriginal.length);
-        const idxV = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+function gerarCruzamentoValido(qtd) {
+    let sucesso = false;
+    let tentativasGerais = 0;
 
-        if (idxH === idxV) continue;
+    while (!sucesso && tentativasGerais < 1000) {
+        tentativasGerais++;
+        palavrasAtivas = [];
+        cruzamentos = [];
 
-        palavraH = listaDePalavrasOriginal[idxH];
-        palavraV = listaDePalavrasOriginal[idxV];
-        palavraHNorm = listaDePalavrasNormalizada[idxH];
-        palavraVNorm = listaDePalavrasNormalizada[idxV];
+        const idx1 = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+        const row1 = Math.floor(Math.random() * 5) + 1;
+        palavrasAtivas.push({
+            id: 0,
+            orien: 'H',
+            fixedPos: row1,
+            orig: listaDePalavrasOriginal[idx1],
+            norm: listaDePalavrasNormalizada[idx1]
+        });
 
-        for (let i = 0; i < 7; i++) {
-            for (let j = 0; j < 7; j++) {
-                if (palavraHNorm[i] === palavraVNorm[j]) {
-                    posH = i;
-                    posV = j;
-                    cruzamentoEncontrado = true;
-                    break;
+        let p2Valida = false;
+        for (let t = 0; t < 100; t++) {
+            const idx2 = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+            if (idx2 === idx1) continue;
+
+            const cand2Norm = listaDePalavrasNormalizada[idx2];
+            const cruzPossiveis = [];
+
+            for (let i = 0; i < 7; i++) {
+                for (let j = 0; j < 7; j++) {
+                    if (palavrasAtivas[0].norm[i] === cand2Norm[j]) {
+                        cruzPossiveis.push({ posH: i, posV: j });
+                    }
                 }
             }
-            if (cruzamentoEncontrado) break;
+
+            if (cruzPossiveis.length > 0) {
+                const escolhat = cruzPossiveis[Math.floor(Math.random() * cruzPossiveis.length)];
+                palavrasAtivas.push({
+                    id: 1,
+                    orien: 'V',
+                    fixedPos: escolhat.posH,
+                    orig: listaDePalavrasOriginal[idx2],
+                    norm: listaDePalavrasNormalizada[idx2]
+                });
+
+                cruzamentos.push({
+                    row: row1,
+                    col: escolhat.posH,
+                    palHIdx: 0,
+                    posH: escolhat.posH,
+                    palVIdx: 1,
+                    posV: escolhat.posV
+                });
+
+                p2Valida = true;
+                break;
+            }
+        }
+
+        if (!p2Valida) continue;
+        if (qtd === 2) { sucesso = true; break; }
+
+        let palavrasEncaixadas = 2;
+
+        for (let pExtra = 2; pExtra < qtd; pExtra++) {
+            let encaixou = false;
+            const tentarOrien = (pExtra % 2 === 0) ? 'H' : 'V';
+
+            for (let t = 0; t < 200; t++) {
+                const idxN = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+                if (palavrasAtivas.some(p => p.orig === listaDePalavrasOriginal[idxN])) continue;
+
+                const candNorm = listaDePalavrasNormalizada[idxN];
+                const opostas = palavrasAtivas.filter(p => p.orien !== tentarOrien);
+
+                for (let op of opostas) {
+                    const cruzes = [];
+                    for (let i = 0; i < 7; i++) {
+                        for (let j = 0; j < 7; j++) {
+                            if (op.norm[i] === candNorm[j]) {
+                                cruzes.push({ posOp: i, posCand: j });
+                            }
+                        }
+                    }
+
+                    if (cruzes.length > 0) {
+                        const cEscolha = cruzes[Math.floor(Math.random() * cruzes.length)];
+                        const fixedPosCalculada = cEscolha.posOp;
+
+                        if (!palavrasAtivas.some(p => p.orien === tentarOrien && p.fixedPos === fixedPosCalculada)) {
+                            palavrasAtivas.push({
+                                id: pExtra,
+                                orien: tentarOrien,
+                                fixedPos: fixedPosCalculada,
+                                orig: listaDePalavrasOriginal[idxN],
+                                norm: listaDePalavrasNormalizada[idxN]
+                            });
+
+                            if (tentarOrien === 'H') {
+                                cruzamentos.push({
+                                    row: fixedPosCalculada,
+                                    col: op.fixedPos,
+                                    palHIdx: pExtra,
+                                    posH: op.fixedPos,
+                                    palVIdx: op.id,
+                                    posV: cEscolha.posOp
+                                });
+                            } else {
+                                cruzamentos.push({
+                                    row: op.fixedPos,
+                                    col: fixedPosCalculada,
+                                    palHIdx: op.id,
+                                    posH: cEscolha.posOp,
+                                    palVIdx: pExtra,
+                                    posV: op.fixedPos
+                                });
+                            }
+
+                            encaixou = true;
+                            palavrasEncaixadas++;
+                            break;
+                        }
+                    }
+                }
+                if (encaixou) break;
+            }
+        }
+
+        if (palavrasEncaixadas === qtd) {
+            sucesso = true;
         }
     }
+
+    if (!sucesso) {
+        gerarCruzamentoValido(qtd);
+    }
+}
+
+function iniciarJogo(modo) {
+    numPalavrasAlvo = modo;
+    
+    if (modo === 2) maxTentativas = 8;
+    else if (modo === 3) maxTentativas = 10;
+    else if (modo === 4) maxTentativas = 12;
+
+    linhaAtual = 0;
+    cursorIndex = 0;
+    direcaoAtual = 1;
+    statusTecladoPorPalavra = {};
+
+    gerarCruzamentoValido(numPalavrasAlvo);
 
     const tabuleiro = document.getElementById("tabuleiro");
     tabuleiro.innerHTML = "";
@@ -85,12 +213,35 @@ function iniciarJogo() {
             box-sizing: border-box;
         }
 
-        .topo-acoes {
+        .bar-menu {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
+            align-items: center;
             width: 100%;
             max-width: 500px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .modos-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-modo {
+            background: #333;
+            color: #aaa;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .btn-modo.ativo {
+            background: #3aa394;
+            color: #fff;
+            border-color: #3aa394;
         }
 
         .btn-ajuda {
@@ -108,11 +259,13 @@ function iniciarJogo() {
         .historico-tentativas {
             position: absolute;
             left: 20px;
-            top: 20px;
+            top: 60px;
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(3, auto);
-            gap: 15px;
+            gap: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding-right: 5px;
             width: fit-content;
         }
 
@@ -131,8 +284,8 @@ function iniciarJogo() {
         }
 
         .tabuleiro-tentativa.mini {
-            grid-template-columns: repeat(7, 18px);
-            grid-template-rows: repeat(7, 18px);
+            grid-template-columns: repeat(7, 16px);
+            grid-template-rows: repeat(7, 16px);
             gap: 2px;
             width: fit-content;
         }
@@ -155,7 +308,7 @@ function iniciarJogo() {
         }
 
         .mini .letra {
-            font-size: 10px;
+            font-size: 9px;
             border-width: 1px;
         }
 
@@ -173,6 +326,7 @@ function iniciarJogo() {
         .correta { background-color: #3aa394 !important; color: white; border-color: #3aa394; }
         .lugar-errado { background-color: #d3ad69 !important; color: white; border-color: #d3ad69; }
         .errada { background-color: #312a2c !important; color: white; border-color: #312a2c; }
+        .cruzamento-duplo { background-color: #9c27b0 !important; color: white; border-color: #9c27b0; }
 
         #teclado {
             display: flex;
@@ -207,11 +361,11 @@ function iniciarJogo() {
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.15s ease;
+            transition: background 0.2s ease;
         }
 
-        .tecla:hover { background-color: #616161; }
-        .tecla:active { background-color: #333; }
+        .tecla:hover { opacity: 0.9; }
+        .tecla:active { transform: scale(0.96); }
 
         .tecla.especial {
             flex: 1.5;
@@ -219,7 +373,6 @@ function iniciarJogo() {
             background-color: #5d5d5d;
         }
 
-        /* Modais Customizados */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -273,14 +426,8 @@ function iniciarJogo() {
             font-size: 15px;
         }
 
-        .modal-btn:hover {
-            background-color: #2e8377;
-        }
-
         @media (max-width: 768px) {
-            #tabuleiro {
-                padding: 10px 5px;
-            }
+            #tabuleiro { padding: 10px 5px; }
 
             .historico-tentativas {
                 position: relative;
@@ -313,7 +460,6 @@ function iniciarJogo() {
     document.head.appendChild(estiloGrid);
 
     criarTabuleiro();
-    exibirModalComoJogar();
 }
 
 function exibirModal(titulo, htmlConteudo, textoBotao = "Fechar", callback = null) {
@@ -344,13 +490,19 @@ function exibirModal(titulo, htmlConteudo, textoBotao = "Fechar", callback = nul
 
 function exibirModalComoJogar() {
     const regras = `
-        <p>Adivilhe as duas palavras cruzadas de 7 letras em 6 tentativas!</p>
+        <p>Descubra as palavras cruzadas antes que suas tentativas acabem!</p>
         <ul>
-            <li><strong>Verde:</strong> A letra está na posição correta.</li>
-            <li><strong>Amarelo:</strong> A letra faz parte da palavra, mas está na posição errada.</li>
-            <li><strong>Cinza:</strong> A letra não pertence à palavra.</li>
-            <li>Você pode trocar a orientação do cursor (horizontal/vertical) clicando nas caixas.</li>
-            <li><strong>Acentuação:</strong> Digite sem acento. Se a palavra correta possuir acento ou Ç, ela será exibida formatada ao confirmar!</li>
+            <li><strong>Cruzado (2 palavras):</strong> 8 tentativas</li>
+            <li><strong>Trisais (3 palavras):</strong> 10 tentativas</li>
+            <li><strong>Quadras (4 palavras):</strong> 12 tentativas</li>
+        </ul>
+        <hr style="border-color: #444; margin: 10px 0;">
+        <ul>
+            <li><strong>Verde:</strong> Letra na posição correta.</li>
+            <li><strong>Amarelo:</strong> Letra pertence à palavra, mas em outra posição.</li>
+            <li><strong>Roxo:</strong> Em cruzamentos! Indica que a letra pertence às <u>duas palavras</u>, mas fora do lugar em ambas.</li>
+            <li><strong>Cinza:</strong> Letra não pertence à palavra.</li>
+            <li><strong>Teclado Fatiado:</strong> O fundo das teclas se divide proporcionalmente de acordo com a quantidade de palavras ativas.</li>
         </ul>
     `;
     exibirModal("Como Jogar", regras, "Entendi");
@@ -427,25 +579,28 @@ function criarGridBase(tentativa, ehMini) {
 
     const celulas = [];
 
-    for (let row = 0; row < 7; row++) {
-        for (let col = 0; col < 7; col++) {
+    for (let r = 0; r < 7; r++) {
+        for (let c = 0; c < 7; c++) {
             const caixa = document.createElement("div");
             
-            const ehHorizontal = (row === posV);
-            const ehVertical = (col === posH);
+            const palsH = palavrasAtivas.filter(p => p.orien === 'H' && p.fixedPos === r);
+            const palsV = palavrasAtivas.filter(p => p.orien === 'V' && p.fixedPos === c);
 
-            if (ehHorizontal || ehVertical) {
+            const ehH = palsH.length > 0;
+            const ehV = palsV.length > 0;
+
+            if (ehH || ehV) {
                 caixa.className = "letra";
-                caixa.dataset.row = row;
-                caixa.dataset.col = col;
-                caixa.dataset.indexH = ehHorizontal ? col : -1;
-                caixa.dataset.indexV = ehVertical ? row : -1;
-                
-                if (ehHorizontal && ehVertical) {
+                caixa.dataset.row = r;
+                caixa.dataset.col = c;
+                caixa.dataset.indexH = ehH ? c : -1;
+                caixa.dataset.indexV = ehV ? r : -1;
+
+                if (ehH && ehV) {
                     caixa.dataset.tipo = "intersecao";
-                } else if (ehHorizontal) {
+                } else if (ehH) {
                     caixa.dataset.tipo = "horizontal";
-                } else if (ehVertical) {
+                } else {
                     caixa.dataset.tipo = "vertical";
                 }
 
@@ -457,7 +612,7 @@ function criarGridBase(tentativa, ehMini) {
             }
             
             container.appendChild(caixa);
-            if (ehHorizontal || ehVertical) celulas.push(caixa);
+            if (ehH || ehV) celulas.push(caixa);
         }
     }
 
@@ -493,12 +648,8 @@ function criarTecladoVirtual() {
             }
 
             botao.dataset.key = tecla;
-            
             botao.addEventListener("mousedown", (e) => e.preventDefault());
-            
-            botao.addEventListener("click", () => {
-                processarEntrada(tecla);
-            });
+            botao.addEventListener("click", () => processarEntrada(tecla));
 
             linhaDiv.appendChild(botao);
         });
@@ -509,33 +660,74 @@ function criarTecladoVirtual() {
     return tecladoContainer;
 }
 
-function atualizarStatusTeclado(letra, novoStatus) {
+function atualizarStatusTecladoGradiente(letra, idxPalavra, novoStatus) {
     const letraNorm = normalizarTexto(letra).toUpperCase();
     const botao = document.querySelector(`.tecla[data-key="${letraNorm}"]`);
     if (!botao) return;
 
-    const prioridade = { "correta": 3, "lugar-errado": 2, "errada": 1 };
-    const statusAtual = botao.dataset.status || "";
-
-    if (!statusAtual || prioridade[novoStatus] > prioridade[statusAtual]) {
-        botao.dataset.status = novoStatus;
-        
-        botao.classList.remove("correta", "lugar-errado", "errada");
-        botao.classList.add(novoStatus);
+    if (!statusTecladoPorPalavra[letraNorm]) {
+        statusTecladoPorPalavra[letraNorm] = Array(numPalavrasAlvo).fill("pendente");
     }
+
+    const prioridades = { "correta": 4, "lugar-errado": 3, "errada": 2, "pendente": 1 };
+    const statusAtual = statusTecladoPorPalavra[letraNorm][idxPalavra];
+
+    if (prioridades[novoStatus] > prioridades[statusAtual]) {
+        statusTecladoPorPalavra[letraNorm][idxPalavra] = novoStatus;
+    }
+
+    const paletaCores = {
+        "correta": "#3aa394",
+        "lugar-errado": "#d3ad69",
+        "errada": "#312a2c",
+        "pendente": "#4a4a4a"
+    };
+
+    const statusArray = statusTecladoPorPalavra[letraNorm];
+    const pctStep = 100 / numPalavrasAlvo;
+    const gradientStops = [];
+
+    for (let i = 0; i < numPalavrasAlvo; i++) {
+        const cor = paletaCores[statusArray[i]] || "#4a4a4a";
+        const start = i * pctStep;
+        const end = (i + 1) * pctStep;
+        gradientStops.push(`${cor} ${start}% ${end}%`);
+    }
+
+    botao.style.background = `linear-gradient(to right, ${gradientStops.join(", ")})`;
 }
 
 function criarTabuleiro() {
     const tabuleiro = document.getElementById("tabuleiro");
     
-    const topo = document.createElement("div");
-    topo.className = "topo-acoes";
+    const barMenu = document.createElement("div");
+    barMenu.className = "bar-menu";
+
+    const modosContainer = document.createElement("div");
+    modosContainer.className = "modos-container";
+
+    const modsoInfo = [
+        { key: 2, label: "Cruzado" },
+        { key: 3, label: "Trisais" },
+        { key: 4, label: "Quadras" }
+    ];
+
+    modsoInfo.forEach(m => {
+        const btn = document.createElement("button");
+        btn.className = `btn-modo ${numPalavrasAlvo === m.key ? 'ativo' : ''}`;
+        btn.innerText = m.label;
+        btn.onclick = () => iniciarJogo(m.key);
+        modosContainer.appendChild(btn);
+    });
+
     const btnAjuda = document.createElement("button");
     btnAjuda.className = "btn-ajuda";
     btnAjuda.innerText = "?";
     btnAjuda.onclick = exibirModalComoJogar;
-    topo.appendChild(btnAjuda);
-    tabuleiro.appendChild(topo);
+
+    barMenu.appendChild(modosContainer);
+    barMenu.appendChild(btnAjuda);
+    tabuleiro.appendChild(barMenu);
 
     const areaEntrada = document.createElement("div");
     areaEntrada.id = "area-entrada";
@@ -587,7 +779,6 @@ function atualizarFoco() {
     if (linhaAtual >= maxTentativas) return;
 
     gridsDOM[0].forEach(c => c.classList.remove("focada"));
-
     const celulaAtual = obterCelulaAtual();
     if (celulaAtual) celulaAtual.classList.add("focada");
 }
@@ -601,43 +792,44 @@ function obterCelulaAtual() {
 }
 
 function verificarPalavras() {
-    let tentativaHNorm = "";
-    let tentativaVNorm = "";
-    
     const celulasAtuais = gridsDOM[0];
+    const tentativasPorPalavra = [];
 
-    for(let i = 0; i < 7; i++) {
-        const cH = celulasAtuais.find(c => parseInt(c.dataset.indexH) === i);
-        const cV = celulasAtuais.find(c => parseInt(c.dataset.indexV) === i);
-        
-        if(!cH.innerText || !cV.innerText) {
-            alert("Preencha todas as letras das duas palavras antes de confirmar!");
+    for (let p of palavrasAtivas) {
+        let tentNorm = "";
+        for (let i = 0; i < 7; i++) {
+            let c;
+            if (p.orien === 'H') {
+                c = celulasAtuais.find(cel => parseInt(cel.dataset.row) === p.fixedPos && parseInt(cel.dataset.col) === i);
+            } else {
+                c = celulasAtuais.find(cel => parseInt(cel.dataset.col) === p.fixedPos && parseInt(cel.dataset.row) === i);
+            }
+
+            if (!c || !c.innerText) {
+                alert("Preencha todas as letras antes de confirmar!");
+                return;
+            }
+            tentNorm += c.innerText;
+        }
+
+        tentNorm = normalizarTexto(tentNorm);
+        const idxDict = listaDePalavrasNormalizada.indexOf(tentNorm);
+
+        if (idxDict === -1) {
+            alert(`A palavra "${tentNorm.toUpperCase()}" não existe no dicionário!`);
             return;
         }
 
-        tentativaHNorm += cH.innerText;
-        tentativaVNorm += cV.innerText;
+        tentativasPorPalavra.push({
+            palavraObj: p,
+            tentNorm: tentNorm,
+            exibicao: listaDePalavrasOriginal[idxDict]
+        });
     }
 
-    tentativaHNorm = normalizarTexto(tentativaHNorm);
-    tentativaVNorm = normalizarTexto(tentativaVNorm);
-
-    const idxDictH = listaDePalavrasNormalizada.indexOf(tentativaHNorm);
-    const idxDictV = listaDePalavrasNormalizada.indexOf(tentativaVNorm);
-
-    if (idxDictH === -1 || idxDictV === -1) {
-        alert("Uma ou mais palavras não existem no dicionário!");
-        return;
-    }
-
-    const tentativaHExibicao = listaDePalavrasOriginal[idxDictH];
-    const tentativaVExibicao = listaDePalavrasOriginal[idxDictV];
-
-    const minicard = document.getElementById(`tentativa-${linhaAtual}`);
-
-    const calcularStatus = (palavraDigitadaNorm, palavraCertaNorm) => {
-        const secretArr = palavraCertaNorm.split("");
-        const guessArr = palavraDigitadaNorm.split("");
+    const resultados = tentativasPorPalavra.map(item => {
+        const secretArr = item.palavraObj.norm.split("");
+        const guessArr = item.tentNorm.split("");
         const status = Array(7).fill("errada");
 
         for (let i = 0; i < 7; i++) {
@@ -657,55 +849,64 @@ function verificarPalavras() {
                 }
             }
         }
-        return status;
-    };
 
-    const statusH = calcularStatus(tentativaHNorm, palavraHNorm);
-    const statusV = calcularStatus(tentativaVNorm, palavraVNorm);
+        return { ...item, status };
+    });
+
+    const minicard = document.getElementById(`tentativa-${linhaAtual}`);
 
     for (let r = 0; r < 7; r++) {
         for (let c = 0; c < 7; c++) {
-            const ehH = (r === posV);
-            const ehV = (c === posH);
-
-            if (!ehH && !ehV) continue;
-
             const miniCell = minicard.querySelector(`[data-row="${r}"][data-col="${c}"]`);
-            
-            if (ehH && ehV) {
-                miniCell.innerText = tentativaHExibicao[c];
-                const stH = statusH[c];
-                const stV = statusV[r];
+            if (!miniCell) continue;
+
+            const resH = resultados.find(res => res.palavraObj.orien === 'H' && res.palavraObj.fixedPos === r);
+            const resV = resultados.find(res => res.palavraObj.orien === 'V' && res.palavraObj.fixedPos === c);
+
+            if (resH && resV) {
+                miniCell.innerText = resH.exibicao[c];
+                const stH = resH.status[c];
+                const stV = resV.status[r];
 
                 let statusFinal = "errada";
                 if (stH === "correta" || stV === "correta") {
                     statusFinal = "correta";
-                } else if (stH === "lugar-errado" || stV === "lugar-errado") {
+                } 
+                else if (stH === "lugar-errado" && stV === "lugar-errado") {
+                    statusFinal = "cruzamento-duplo";
+                } 
+                else if (stH === "lugar-errado" || stV === "lugar-errado") {
                     statusFinal = "lugar-errado";
                 }
 
                 miniCell.classList.add(statusFinal);
-                atualizarStatusTeclado(tentativaHExibicao[c], statusFinal);
-            } else if (ehH) {
-                miniCell.innerText = tentativaHExibicao[c];
-                miniCell.classList.add(statusH[c]);
-                atualizarStatusTeclado(tentativaHExibicao[c], statusH[c]);
-            } else if (ehV) {
-                miniCell.innerText = tentativaVExibicao[r];
-                miniCell.classList.add(statusV[r]);
-                atualizarStatusTeclado(tentativaVExibicao[r], statusV[r]);
+
+                atualizarStatusTecladoGradiente(resH.exibicao[c], resH.palavraObj.id, stH);
+                atualizarStatusTecladoGradiente(resV.exibicao[r], resV.palavraObj.id, stV);
+            } 
+            else if (resH) {
+                miniCell.innerText = resH.exibicao[c];
+                miniCell.classList.add(resH.status[c]);
+                atualizarStatusTecladoGradiente(resH.exibicao[c], resH.palavraObj.id, resH.status[c]);
+            } 
+            else if (resV) {
+                miniCell.innerText = resV.exibicao[r];
+                miniCell.classList.add(resV.status[r]);
+                atualizarStatusTecladoGradiente(resV.exibicao[r], resV.palavraObj.id, resV.status[r]);
             }
         }
     }
 
-    if (tentativaHNorm === palavraHNorm && tentativaVNorm === palavraVNorm) {
+    const todasCorretas = resultados.every(r => r.tentNorm === r.palavraObj.norm);
+
+    if (todasCorretas) {
         linhaAtual = maxTentativas;
         setTimeout(() => {
+            let resumoPalavras = palavrasAtivas.map(p => `<p><strong>${p.orien === 'H' ? 'Horizontal' : 'Vertical'}:</strong> ${p.orig}</p>`).join("");
             exibirModal("Você Venceu! 🎉", `
-                <p>Parabéns! Você descobriu as duas palavras com sucesso.</p>
-                <p><strong>Palavra Horizontal:</strong> ${palavraH}</p>
-                <p><strong>Palavra Vertical:</strong> ${palavraV}</p>
-            `, "Jogar Novamente", () => location.reload());
+                <p>Parabéns! Você descobriu todas as ${numPalavrasAlvo} palavras!</p>
+                ${resumoPalavras}
+            `, "Jogar Novamente", () => iniciarJogo(numPalavrasAlvo));
         }, 150);
         return;
     }
@@ -724,11 +925,11 @@ function verificarPalavras() {
         atualizarFoco();
     } else {
         setTimeout(() => {
-            exibirModal("Fim de Jogo! ❌", `
-                <p>Suas tentativas acabaram! Tente novamente.</p>
-                <p><strong>Palavra Horizontal:</strong> ${palavraH}</p>
-                <p><strong>Palavra Vertical:</strong> ${palavraV}</p>
-            `, "Jogar Novamente", () => location.reload());
+            let resumoPalavras = palavrasAtivas.map(p => `<p><strong>${p.orien === 'H' ? 'Horizontal' : 'Vertical'}:</strong> ${p.orig}</p>`).join("");
+            exibirModal("Fim de Jogo ❌", `
+                <p>Suas tentativas acabaram! As palavras eram:</p>
+                ${resumoPalavras}
+            `, "Tentar Novamente", () => iniciarJogo(numPalavrasAlvo));
         }, 200);
     }
 }
