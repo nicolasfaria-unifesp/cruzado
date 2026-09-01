@@ -483,6 +483,7 @@ function iniciarJogo(modo) {
             overflow: hidden;
             width: 100%;
             height: 100%;
+            height: 100dvh; /* Garante que respeite a barra do navegador mobile */
             transition: background-color 0.3s ease;
         }
 
@@ -492,9 +493,9 @@ function iniciarJogo(modo) {
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
+            padding: 10px;
             width: 100%;
-            height: 100vh;
+            height: 100dvh;
             max-width: 1600px;
             margin: 0 auto;
             box-sizing: border-box;
@@ -660,14 +661,15 @@ function iniciarJogo(modo) {
             align-items: center;
             flex-grow: 1;
             min-height: 0;
-            padding: 10px 0;
+            padding: 5px 0;
+            width: 100%;
         }
 
         .tabuleiro-tentativa {
             display: grid;
-            grid-template-columns: repeat(7, min(7.5vh, 62px));
-            grid-template-rows: repeat(7, min(7.5vh, 62px));
-            gap: 6px;
+            grid-template-columns: repeat(7, min(6.5vh, 58px));
+            grid-template-rows: repeat(7, min(6.5vh, 58px));
+            gap: 4px;
         }
 
         .tabuleiro-tentativa.mini {
@@ -685,7 +687,7 @@ function iniciarJogo(modo) {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: min(4.5vh, 28px);
+            font-size: min(4vh, 26px);
             font-weight: bold;
             cursor: pointer;
             text-transform: uppercase;
@@ -721,9 +723,9 @@ function iniciarJogo(modo) {
         #teclado {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: max(5px, env(safe-area-inset-bottom));
             user-select: none;
             width: 100%;
             max-width: 680px;
@@ -732,22 +734,22 @@ function iniciarJogo(modo) {
 
         .linha-teclado {
             display: flex;
-            gap: 6px;
+            gap: 4px;
             width: 100%;
             justify-content: center;
         }
 
         .tecla {
-            height: min(8vh, 60px);
-            min-width: 40px;
+            height: min(6vh, 48px);
+            min-width: 0;
             flex: 1;
-            padding: 0 4px;
+            padding: 0 2px;
             background-color: rgba(0, 0, 0, 0.35);
             color: #fff;
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 6px;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -759,8 +761,8 @@ function iniciarJogo(modo) {
         .tecla:active { transform: scale(0.96); }
 
         .tecla.especial {
-            flex: 1.5;
-            font-size: 14px;
+            flex: 1.4;
+            font-size: 13px;
             background-color: rgba(0, 0, 0, 0.5);
         }
 
@@ -819,7 +821,7 @@ function iniciarJogo(modo) {
 
         @media (max-width: 600px), (max-height: 700px) {
             #tabuleiro {
-                padding: 5px;
+                padding: 4px;
             }
 
             .bar-menu {
@@ -827,44 +829,44 @@ function iniciarJogo(modo) {
             }
 
             .btn-modo {
-                padding: 4px 8px;
+                padding: 3px 6px;
                 font-size: 11px;
                 border-radius: 4px;
             }
 
             .btn-ajuda {
-                width: 30px;
-                height: 30px;
-                font-size: 15px;
+                width: 26px;
+                height: 26px;
+                font-size: 14px;
             }
 
             .painel-subsecao {
-                gap: 8px;
+                gap: 6px;
                 margin-top: 2px;
             }
 
             .titulo-modo {
-                font-size: 18px;
+                font-size: 16px;
             }
 
             .timer-display {
-                font-size: 14px !important;
-                padding: 2px 8px;
+                font-size: 13px !important;
+                padding: 2px 6px;
             }
 
             .btn-tempo {
-                padding: 2px 6px;
-                font-size: 11px;
+                padding: 2px 4px;
+                font-size: 10px;
             }
 
             .tabuleiro-tentativa {
-                grid-template-columns: repeat(7, min(5.2vh, 42px));
-                grid-template-rows: repeat(7, min(5.2vh, 42px));
-                gap: 3px;
+                grid-template-columns: repeat(7, min(4.4vh, 38px));
+                grid-template-rows: repeat(7, min(4.4vh, 38px));
+                gap: 2px;
             }
 
             .letra {
-                font-size: min(3vh, 20px);
+                font-size: min(2.6vh, 18px);
                 border-radius: 4px;
                 border-width: 1px;
             }
@@ -882,53 +884,51 @@ function iniciarJogo(modo) {
                 overflow-x: auto;
                 overflow-y: hidden;
                 padding-right: 0;
-                padding-bottom: 5px;
-                margin-bottom: 5px;
+                padding-bottom: 2px;
+                margin-bottom: 2px;
             }
 
             .tabuleiro-tentativa.mini {
-                grid-template-columns: repeat(7, 12px);
-                grid-template-rows: repeat(7, 12px);
-                gap: 2px;
+                grid-template-columns: repeat(7, 10px);
+                grid-template-rows: repeat(7, 10px);
+                gap: 1px;
             }
 
             .mini .letra {
-                font-size: 7px;
+                font-size: 6px;
             }
 
             .card-tentativa-cegueta {
-                padding: 4px 6px;
-                gap: 6px;
+                padding: 2px 4px;
+                gap: 4px;
             }
 
             .resumo-cegueta {
-                font-size: 10px;
-                gap: 2px;
+                font-size: 9px;
+                gap: 1px;
             }
 
             .tag-cor {
-                padding: 1px 4px;
+                padding: 1px 3px;
             }
 
             #teclado {
-                gap: 4px;
-                margin-bottom: 5px;
+                gap: 3px;
+                margin-bottom: max(3px, env(safe-area-inset-bottom));
             }
 
             .linha-teclado {
-                gap: 3px;
+                gap: 2px;
             }
 
             .tecla {
-                height: min(6vh, 44px);
-                min-width: 28px;
-                font-size: 13px;
-                padding: 0 2px;
+                height: min(5vh, 40px);
+                font-size: 12px;
                 border-radius: 4px;
             }
 
             .tecla.especial {
-                font-size: 11px;
+                font-size: 10px;
             }
         }
     `;
