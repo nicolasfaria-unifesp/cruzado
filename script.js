@@ -2,7 +2,7 @@ let listaDePalavrasOriginal = [];
 let listaDePalavrasNormalizada = [];
 
 // Estado da Partida
-let modoAtual = 2;
+let modoAtual = 2; // 2, 3, 4 ou 5 (Cegueta)
 let numPalavrasAlvo = 2;
 let palavrasAtivas = [];
 let cruzamentos = [];
@@ -231,6 +231,7 @@ function iniciarJogo(modo) {
             overflow: hidden;
             width: 100%;
             height: 100%;
+            background-color: #555;
         }
 
         #tabuleiro {
@@ -239,10 +240,10 @@ function iniciarJogo(modo) {
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
+            padding: 15px;
             width: 100%;
             height: 100vh;
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             box-sizing: border-box;
             overflow: hidden;
@@ -253,16 +254,16 @@ function iniciarJogo(modo) {
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            max-width: 450px;
-            margin-bottom: 2px;
+            max-width: 680px;
+            margin-bottom: 5px;
             flex-shrink: 0;
         }
 
         .titulo-modo {
             color: #fff;
-            font-size: 22px;
+            font-size: 32px;
             font-weight: bold;
-            margin: 2px 0;
+            margin: 4px 0 10px 0;
             text-align: center;
             font-family: sans-serif;
             flex-shrink: 0;
@@ -270,17 +271,17 @@ function iniciarJogo(modo) {
 
         .modos-container {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
 
         .btn-modo {
             background: #333;
             color: #aaa;
             border: 1px solid #555;
-            border-radius: 4px;
-            padding: 5px 12px;
+            border-radius: 6px;
+            padding: 8px 18px;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 16px;
             cursor: pointer;
         }
 
@@ -295,35 +296,35 @@ function iniciarJogo(modo) {
             color: #fff;
             border: none;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 42px;
+            height: 42px;
             font-weight: bold;
-            font-size: 15px;
+            font-size: 20px;
             cursor: pointer;
         }
 
         .historico-tentativas {
             position: absolute;
-            left: 10px;
+            left: 20px;
             top: 50%;
             transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
             max-height: 85vh;
             overflow-y: auto;
             overflow-x: hidden;
-            padding-right: 6px;
+            padding-right: 8px;
             width: fit-content;
         }
 
         .historico-tentativas::-webkit-scrollbar {
-            width: 6px;
+            width: 8px;
         }
 
         .historico-tentativas::-webkit-scrollbar-thumb {
-            background: #555;
-            border-radius: 3px;
+            background: #666;
+            border-radius: 4px;
         }
 
         .historico-tentativas::-webkit-scrollbar-track {
@@ -333,29 +334,29 @@ function iniciarJogo(modo) {
         .card-tentativa-cegueta {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
             background: #2b2b2b;
-            padding: 4px 8px;
-            border-radius: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
             border: 1px solid #444;
         }
 
         .resumo-cegueta {
             display: flex;
             flex-direction: column;
-            gap: 3px;
-            font-size: 11px;
+            gap: 4px;
+            font-size: 14px;
             font-weight: bold;
             font-family: sans-serif;
         }
 
         .tag-cor {
-            padding: 2px 6px;
-            border-radius: 3px;
+            padding: 3px 8px;
+            border-radius: 4px;
             color: #fff;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
         }
 
         .tag-verde { background-color: #3aa394; }
@@ -368,20 +369,20 @@ function iniciarJogo(modo) {
             align-items: center;
             flex-grow: 1;
             min-height: 0;
-            padding: 5px 0;
+            padding: 10px 0;
         }
 
         .tabuleiro-tentativa {
             display: grid;
-            grid-template-columns: repeat(7, min(5vh, 42px));
-            grid-template-rows: repeat(7, min(5vh, 42px));
-            gap: 4px;
+            grid-template-columns: repeat(7, min(7.5vh, 62px));
+            grid-template-rows: repeat(7, min(7.5vh, 62px));
+            gap: 6px;
         }
 
         .tabuleiro-tentativa.mini {
-            grid-template-columns: repeat(7, 12px);
-            grid-template-rows: repeat(7, 12px);
-            gap: 2px;
+            grid-template-columns: repeat(7, 18px);
+            grid-template-rows: repeat(7, 18px);
+            gap: 3px;
             width: fit-content;
         }
 
@@ -393,20 +394,20 @@ function iniciarJogo(modo) {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: min(3vh, 20px);
+            font-size: min(4.5vh, 28px);
             font-weight: bold;
             cursor: pointer;
             text-transform: uppercase;
             background: #676767;
             user-select: none;
             box-sizing: border-box;
-            border-radius: 4px;
+            border-radius: 6px;
         }
 
         .mini .letra {
-            font-size: 7px;
+            font-size: 10px;
             border-width: 1px;
-            border-radius: 1px;
+            border-radius: 2px;
         }
 
         .letra.escondida {
@@ -417,7 +418,7 @@ function iniciarJogo(modo) {
 
         .letra.focada {
             border-color: #fff !important;
-            border-bottom: 4px solid #3aa394 !important;
+            border-bottom: 5px solid #3aa394 !important;
             background: #7a7a7a;
         }
 
@@ -429,33 +430,33 @@ function iniciarJogo(modo) {
         #teclado {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
             align-items: center;
-            margin-bottom: 2px;
+            margin-bottom: 10px;
             user-select: none;
             width: 100%;
-            max-width: 480px;
+            max-width: 680px;
             flex-shrink: 0;
         }
 
         .linha-teclado {
             display: flex;
-            gap: 4px;
+            gap: 6px;
             width: 100%;
             justify-content: center;
         }
 
         .tecla {
-            height: min(6vh, 42px);
-            min-width: 28px;
+            height: min(8vh, 60px);
+            min-width: 40px;
             flex: 1;
-            padding: 0 2px;
+            padding: 0 4px;
             background-color: #4a4a4a;
             color: #fff;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -468,7 +469,7 @@ function iniciarJogo(modo) {
 
         .tecla.especial {
             flex: 1.5;
-            font-size: 11px;
+            font-size: 14px;
             background-color: #5d5d5d;
         }
 
@@ -490,7 +491,7 @@ function iniciarJogo(modo) {
             color: #fff;
             padding: 25px;
             border-radius: 8px;
-            max-width: 450px;
+            max-width: 500px;
             width: 90%;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
             font-family: sans-serif;
@@ -504,7 +505,7 @@ function iniciarJogo(modo) {
 
         .modal-conteudo p, .modal-conteudo ul {
             text-align: left;
-            font-size: 14px;
+            font-size: 15px;
             line-height: 1.5;
             color: #ddd;
         }
@@ -522,10 +523,10 @@ function iniciarJogo(modo) {
             border-radius: 4px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 16px;
         }
 
-        @media (max-width: 850px) {
+        @media (max-width: 950px) {
             #tabuleiro { padding: 5px; height: auto; overflow: visible; }
 
             .historico-tentativas {
@@ -550,16 +551,16 @@ function iniciarJogo(modo) {
             }
 
             .tabuleiro-tentativa.principal {
-                grid-template-columns: repeat(7, 10vw);
-                grid-template-rows: repeat(7, 10vw);
-                max-width: 360px;
-                max-height: 360px;
+                grid-template-columns: repeat(7, 11vw);
+                grid-template-rows: repeat(7, 11vw);
+                max-width: 420px;
+                max-height: 420px;
                 gap: 4px;
             }
 
-            .letra { font-size: 18px; }
+            .letra { font-size: 20px; }
             .linha-teclado { gap: 4px; }
-            .tecla { height: 44px; font-size: 13px; }
+            .tecla { height: 48px; font-size: 15px; }
         }
     `;
     document.head.appendChild(estiloGrid);
