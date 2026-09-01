@@ -2,16 +2,20 @@ let listaDePalavrasOriginal = [];
 let listaDePalavrasNormalizada = [];
 
 // Estado da Partida
-let modoAtual = 2; // 2, 3, 4 ou 5 (Cegueta)
+let modoAtual = 2; // 2: Cruzado, 3: Triades, 4: Quadras, 5: Cegueta, 6: Corrida, 7: Memória, 8: Inferno
 let numPalavrasAlvo = 2;
 let palavrasAtivas = [];
 let cruzamentos = [];
 let maxTentativas = 8;
 let linhaAtual = 0;
-let direcaoAtual = 'H'; // 'H' ou 'V'
+let direcaoAtual = 'H';
 let focoRow = 0;
 let focoCol = 0;
 const gridsDOM = [];
+
+let tempoCorrida = 180;
+let timerInterval = null;
+let tempoRestante = 0;
 
 let statusTecladoPorPalavra = {};
 
@@ -191,14 +195,62 @@ function gerarCruzamentoValido(qtd) {
     }
 }
 
+function iniciarTimer(segundos) {
+    if (timerInterval) clearInterval(timerInterval);
+    tempoRestante = segundos;
+    atualizarDisplayTimer();
+
+    timerInterval = setInterval(() => {
+        tempoRestante--;
+        atualizarDisplayTimer();
+
+        if (tempoRestante <= 0) {
+            clearInterval(timerInterval);
+            tempoEsgotado();
+        }
+    }, 1000);
+}
+
+function atualizarDisplayTimer() {
+    const timerEl = document.getElementById("timer-display");
+    if (!timerEl) return;
+    const min = Math.floor(tempoRestante / 60);
+    const seg = tempoRestante % 60;
+    timerEl.innerText = `⏱️ ${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
+}
+
+function tempoEsgotado() {
+    linhaAtual = maxTentativas;
+    let resumoPalavras = palavrasAtivas.map(p => `<p><strong>${p.orien === 'H' ? 'Horizontal' : 'Vertical'}:</strong> ${p.orig}</p>`).join("");
+    exibirModal("Tempo Esgotado! ⏱️", `
+        <p>O tempo acabou! As palavras eram:</p>
+        ${resumoPalavras}
+    `, "Tentar Novamente", () => iniciarJogo(modoAtual));
+}
+
 function iniciarJogo(modo) {
+    if (timerInterval) clearInterval(timerInterval);
+
     modoAtual = modo;
-    numPalavrasAlvo = modo === 5 ? 2 : modo;
+    numPalavrasAlvo = (modo === 3) ? 3 : (modo === 4 ? 4 : 2);
     
     if (modo === 2) maxTentativas = 8;
     else if (modo === 3) maxTentativas = 10;
     else if (modo === 4) maxTentativas = 12;
     else if (modo === 5) maxTentativas = Infinity;
+    else if (modo === 6 || modo === 7 || modo === 8) maxTentativas = 10;
+
+    const coresFundo = {
+        2: "#555555",
+        3: "#555555",
+        4: "#555555",
+        5: "#181818",
+        6: "#1e3a5f",
+        7: "#3b1e4c",
+        8: "#451212"
+    };
+
+    document.body.style.backgroundColor = coresFundo[modo] || "#555555";
 
     linhaAtual = 0;
     direcaoAtual = 'H';
@@ -218,12 +270,12 @@ function iniciarJogo(modo) {
     const tabuleiro = document.getElementById("tabuleiro");
     tabuleiro.innerHTML = "";
 
-    const estiloGrid = document.createElement('style');
-    estiloGrid.id = "estilo-jogo";
-    
     const antigoEstilo = document.getElementById("estilo-jogo");
     if (antigoEstilo) antigoEstilo.remove();
 
+    const estiloGrid = document.createElement('style');
+    estiloGrid.id = "estilo-jogo";
+    
     estiloGrid.innerHTML = `
         body, html {
             margin: 0;
@@ -231,7 +283,7 @@ function iniciarJogo(modo) {
             overflow: hidden;
             width: 100%;
             height: 100%;
-            background-color: #555;
+            transition: background-color 0.3s ease;
         }
 
         #tabuleiro {
@@ -254,35 +306,28 @@ function iniciarJogo(modo) {
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            max-width: 680px;
+            max-width: 800px;
             margin-bottom: 5px;
-            flex-shrink: 0;
-        }
-
-        .titulo-modo {
-            color: #fff;
-            font-size: 32px;
-            font-weight: bold;
-            margin: 4px 0 10px 0;
-            text-align: center;
-            font-family: sans-serif;
             flex-shrink: 0;
         }
 
         .modos-container {
             display: flex;
-            gap: 10px;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .btn-modo {
-            background: #333;
+            background: rgba(0,0,0,0.3);
             color: #aaa;
-            border: 1px solid #555;
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 6px;
-            padding: 8px 18px;
+            padding: 6px 14px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         .btn-modo.ativo {
@@ -292,15 +337,65 @@ function iniciarJogo(modo) {
         }
 
         .btn-ajuda {
-            background: #4a4a4a;
+            background: rgba(255,255,255,0.2);
             color: #fff;
             border: none;
             border-radius: 50%;
-            width: 42px;
-            height: 42px;
+            width: 40px;
+            height: 40px;
             font-weight: bold;
             font-size: 20px;
             cursor: pointer;
+        }
+
+        .painel-subsecao {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 4px;
+        }
+
+        .titulo-modo {
+            color: #fff;
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            font-family: sans-serif;
+            flex-shrink: 0;
+        }
+
+        .timer-display {
+            color: #ffeb3b;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: monospace;
+            background: rgba(0,0,0,0.4);
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,235,59,0.3);
+        }
+
+        .tempo-selector {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .btn-tempo {
+            background: rgba(0, 0, 0, 0.4);
+            color: #ccc;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-tempo.ativo {
+            background: #3aa394;
+            color: #fff;
+            border-color: #3aa394;
         }
 
         .historico-tentativas {
@@ -323,22 +418,18 @@ function iniciarJogo(modo) {
         }
 
         .historico-tentativas::-webkit-scrollbar-thumb {
-            background: #666;
+            background: rgba(255,255,255,0.3);
             border-radius: 4px;
-        }
-
-        .historico-tentativas::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.2);
         }
 
         .card-tentativa-cegueta {
             display: flex;
             align-items: center;
             gap: 12px;
-            background: #2b2b2b;
+            background: rgba(0, 0, 0, 0.4);
             padding: 6px 12px;
             border-radius: 8px;
-            border: 1px solid #444;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .resumo-cegueta {
@@ -398,7 +489,7 @@ function iniciarJogo(modo) {
             font-weight: bold;
             cursor: pointer;
             text-transform: uppercase;
-            background: #676767;
+            background: rgba(255, 255, 255, 0.1);
             user-select: none;
             box-sizing: border-box;
             border-radius: 6px;
@@ -419,12 +510,12 @@ function iniciarJogo(modo) {
         .letra.focada {
             border-color: #fff !important;
             border-bottom: 5px solid #3aa394 !important;
-            background: #7a7a7a;
+            background: rgba(255, 255, 255, 0.25);
         }
 
         .correta { background-color: #3aa394 !important; color: white; border-color: #3aa394; }
         .lugar-errado { background-color: #d3ad69 !important; color: white; border-color: #d3ad69; }
-        .errada { background-color: #312a2c !important; color: white; border-color: #312a2c; }
+        .errada { background-color: rgba(0,0,0,0.6) !important; color: white; border-color: rgba(0,0,0,0.6); }
         .cruzamento-duplo { background-color: #9c27b0 !important; color: white; border-color: #9c27b0; }
 
         #teclado {
@@ -451,9 +542,9 @@ function iniciarJogo(modo) {
             min-width: 40px;
             flex: 1;
             padding: 0 4px;
-            background-color: #4a4a4a;
+            background-color: rgba(0, 0, 0, 0.35);
             color: #fff;
-            border: none;
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 6px;
             font-weight: bold;
             font-size: 18px;
@@ -470,7 +561,7 @@ function iniciarJogo(modo) {
         .tecla.especial {
             flex: 1.5;
             font-size: 14px;
-            background-color: #5d5d5d;
+            background-color: rgba(0, 0, 0, 0.5);
         }
 
         .modal-overlay {
@@ -479,7 +570,7 @@ function iniciarJogo(modo) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.75);
+            background: rgba(0, 0, 0, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -525,54 +616,26 @@ function iniciarJogo(modo) {
             cursor: pointer;
             font-size: 16px;
         }
-
-        @media (max-width: 950px) {
-            #tabuleiro { padding: 5px; height: auto; overflow: visible; }
-
-            .historico-tentativas {
-                position: relative;
-                left: 0;
-                top: 0;
-                transform: none;
-                display: flex;
-                flex-direction: row;
-                overflow-x: auto;
-                overflow-y: hidden;
-                width: 100%;
-                justify-content: flex-start;
-                padding-bottom: 8px;
-                margin-bottom: 10px;
-                max-height: none;
-            }
-
-            .historico-tentativas::-webkit-scrollbar {
-                display: block;
-                height: 6px;
-            }
-
-            .tabuleiro-tentativa.principal {
-                grid-template-columns: repeat(7, 11vw);
-                grid-template-rows: repeat(7, 11vw);
-                max-width: 420px;
-                max-height: 420px;
-                gap: 4px;
-            }
-
-            .letra { font-size: 20px; }
-            .linha-teclado { gap: 4px; }
-            .tecla { height: 48px; font-size: 15px; }
-        }
     `;
     document.head.appendChild(estiloGrid);
 
     criarTabuleiro();
+
+    if (modo === 6) {
+        iniciarTimer(tempoCorrida);
+    } else if (modo === 8) {
+        iniciarTimer(180);
+    }
 }
 
 function obterNomeModo(modo) {
     if (modo === 2) return "Cruzado";
-    if (modo === 3) return "Trisais";
+    if (modo === 3) return "Triades";
     if (modo === 4) return "Quadras";
     if (modo === 5) return "Cegueta";
+    if (modo === 6) return "Corrida";
+    if (modo === 7) return "Memória";
+    if (modo === 8) return "Inferno";
     return "";
 }
 
@@ -608,11 +671,17 @@ function exibirModalComoJogar() {
     if (modoAtual === 2) {
         regrasModo = "<p><strong>Modo Cruzado:</strong> Adivinhe as <strong>2 palavras cruzadas</strong> em até <strong>8 tentativas</strong>.</p>";
     } else if (modoAtual === 3) {
-        regrasModo = "<p><strong>Modo Trisais:</strong> Adivinhe as <strong>3 palavras cruzadas</strong> em até <strong>10 tentativas</strong>.</p>";
+        regrasModo = "<p><strong>Modo Triades:</strong> Adivinhe as <strong>3 palavras cruzadas</strong> em até <strong>10 tentativas</strong>.</p>";
     } else if (modoAtual === 4) {
         regrasModo = "<p><strong>Modo Quadras:</strong> Adivinhe as <strong>4 palavras cruzadas</strong> em até <strong>12 tentativas</strong>.</p>";
     } else if (modoAtual === 5) {
-        regrasModo = "<p><strong>Modo Cegueta:</strong> Adivinhe as <strong>2 palavras cruzadas</strong> com <strong>tentativas ilimitadas</strong>. As tentativas não mostram as cores das letras individualmente — em vez disso, um contador ao lado indica o total de acertos.</p>";
+        regrasModo = "<p><strong>Modo Cegueta:</strong> Tentativas ilimitadas para 2 palavras. Apenas contadores de acertos são exibidos.</p>";
+    } else if (modoAtual === 6) {
+        regrasModo = "<p><strong>Modo Corrida:</strong> 10 tentativas para 2 palavras contra o relógio (1, 3 ou 5 minutos)!</p>";
+    } else if (modoAtual === 7) {
+        regrasModo = "<p><strong>Modo Memória:</strong> 10 tentativas para 2 palavras. Apenas a sua última tentativa permanece visível!</p>";
+    } else if (modoAtual === 8) {
+        regrasModo = "<p><strong>Modo Inferno:</strong> O desafio supremo! Apenas a última tentativa é exibida, limite de 3 minutos e apenas o contador de acertos da Cegueta!</p>";
     }
 
     const regras = `
@@ -624,7 +693,7 @@ function exibirModalComoJogar() {
         <ul style="margin: 0; padding-left: 20px;">
             <li><strong style="color: #3aa394;">Verde:</strong> A letra está na posição correta.</li>
             <li><strong style="color: #d3ad69;">Amarelo:</strong> A letra pertence à palavra, mas está na posição errada.</li>
-            <li><strong style="color: #9c27b0;">Roxo:</strong> Presente nos cruzamentos! A letra pertence às <u>duas palavras</u>, mas está fora do lugar em ambas.</li>
+            <li><strong style="color: #9c27b0;">Roxo:</strong> Presente nos cruzamentos! A letra pertence às duas palavras, mas está fora do lugar.</li>
             <li><strong style="color: #888;">Cinza:</strong> A letra não pertence à palavra.</li>
         </ul>
     `;
@@ -640,25 +709,17 @@ function celulaExiste(r, c) {
 
 function avancarNaDirecao() {
     if (direcaoAtual === 'H') {
-        if (celulaExiste(focoRow, focoCol + 1)) {
-            focoCol++;
-        }
+        if (celulaExiste(focoRow, focoCol + 1)) focoCol++;
     } else {
-        if (celulaExiste(focoRow + 1, focoCol)) {
-            focoRow++;
-        }
+        if (celulaExiste(focoRow + 1, focoCol)) focoRow++;
     }
 }
 
 function recuarNaDirecao() {
     if (direcaoAtual === 'H') {
-        if (celulaExiste(focoRow, focoCol - 1)) {
-            focoCol--;
-        }
+        if (celulaExiste(focoRow, focoCol - 1)) focoCol--;
     } else {
-        if (celulaExiste(focoRow - 1, focoCol)) {
-            focoRow--;
-        }
+        if (celulaExiste(focoRow - 1, focoCol)) focoRow--;
     }
 }
 
@@ -684,38 +745,19 @@ function processarEntrada(tecla) {
     }
 
     if (tecla === "ARROWRIGHT") {
-        if (celulaExiste(focoRow, focoCol + 1)) {
-            focoCol++;
-            direcaoAtual = 'H';
-            atualizarFoco();
-        }
+        if (celulaExiste(focoRow, focoCol + 1)) { focoCol++; direcaoAtual = 'H'; atualizarFoco(); }
         return;
     }
-
     if (tecla === "ARROWLEFT") {
-        if (celulaExiste(focoRow, focoCol - 1)) {
-            focoCol--;
-            direcaoAtual = 'H';
-            atualizarFoco();
-        }
+        if (celulaExiste(focoRow, focoCol - 1)) { focoCol--; direcaoAtual = 'H'; atualizarFoco(); }
         return;
     }
-
     if (tecla === "ARROWDOWN") {
-        if (celulaExiste(focoRow + 1, focoCol)) {
-            focoRow++;
-            direcaoAtual = 'V';
-            atualizarFoco();
-        }
+        if (celulaExiste(focoRow + 1, focoCol)) { focoRow++; direcaoAtual = 'V'; atualizarFoco(); }
         return;
     }
-
     if (tecla === "ARROWUP") {
-        if (celulaExiste(focoRow - 1, focoCol)) {
-            focoRow--;
-            direcaoAtual = 'V';
-            atualizarFoco();
-        }
+        if (celulaExiste(focoRow - 1, focoCol)) { focoRow--; direcaoAtual = 'V'; atualizarFoco(); }
         return;
     }
 
@@ -755,13 +797,9 @@ function criarGridBase(tentativa, ehMini) {
                 caixa.dataset.row = r;
                 caixa.dataset.col = c;
 
-                if (ehH && ehV) {
-                    caixa.dataset.tipo = "intersecao";
-                } else if (ehH) {
-                    caixa.dataset.tipo = "horizontal";
-                } else {
-                    caixa.dataset.tipo = "vertical";
-                }
+                if (ehH && ehV) caixa.dataset.tipo = "intersecao";
+                else if (ehH) caixa.dataset.tipo = "horizontal";
+                else caixa.dataset.tipo = "vertical";
 
                 if (!ehMini) {
                     caixa.addEventListener("click", () => focarCelulaPorPos(r, c));
@@ -820,7 +858,7 @@ function criarTecladoVirtual() {
 }
 
 function atualizarStatusTecladoGradiente(letra, idxPalavra, novoStatus) {
-    if (modoAtual === 5) return;
+    if (modoAtual === 5 || modoAtual === 8) return;
 
     const letraNorm = normalizarTexto(letra).toUpperCase();
     const botao = document.querySelector(`.tecla[data-key="${letraNorm}"]`);
@@ -840,8 +878,8 @@ function atualizarStatusTecladoGradiente(letra, idxPalavra, novoStatus) {
     const paletaCores = {
         "correta": "#3aa394",
         "lugar-errado": "#d3ad69",
-        "errada": "#312a2c",
-        "pendente": "#4a4a4a"
+        "errada": "rgba(0,0,0,0.6)",
+        "pendente": "rgba(0,0,0,0.35)"
     };
 
     const statusArray = statusTecladoPorPalavra[letraNorm];
@@ -849,7 +887,7 @@ function atualizarStatusTecladoGradiente(letra, idxPalavra, novoStatus) {
     const gradientStops = [];
 
     for (let i = 0; i < numPalavrasAlvo; i++) {
-        const cor = paletaCores[statusArray[i]] || "#4a4a4a";
+        const cor = paletaCores[statusArray[i]] || "rgba(0,0,0,0.35)";
         const start = i * pctStep;
         const end = (i + 1) * pctStep;
         gradientStops.push(`${cor} ${start}% ${end}%`);
@@ -873,14 +911,17 @@ function criarTabuleiro() {
     const modosContainer = document.createElement("div");
     modosContainer.className = "modos-container";
 
-    const modsoInfo = [
+    const modosInfo = [
         { key: 2, label: "Cruzado" },
-        { key: 3, label: "Trisais" },
+        { key: 3, label: "Triades" },
         { key: 4, label: "Quadras" },
-        { key: 5, label: "Cegueta" }
+        { key: 5, label: "Cegueta" },
+        { key: 6, label: "Corrida" },
+        { key: 7, label: "Memória" },
+        { key: 8, label: "Inferno" }
     ];
 
-    modsoInfo.forEach(m => {
+    modosInfo.forEach(m => {
         const btn = document.createElement("button");
         btn.className = `btn-modo ${modoAtual === m.key ? 'ativo' : ''}`;
         btn.innerText = m.label;
@@ -896,12 +937,48 @@ function criarTabuleiro() {
     barMenu.appendChild(modosContainer);
     barMenu.appendChild(btnAjuda);
 
+    const painelSubsecao = document.createElement("div");
+    painelSubsecao.className = "painel-subsecao";
+
     const tituloModo = document.createElement("div");
     tituloModo.className = "titulo-modo";
     tituloModo.innerText = obterNomeModo(modoAtual);
+    painelSubsecao.appendChild(tituloModo);
+
+    if (modoAtual === 6 || modoAtual === 8) {
+        const timerDisplay = document.createElement("div");
+        timerDisplay.className = "timer-display";
+        timerDisplay.id = "timer-display";
+        timerDisplay.innerText = "⏱️ 00:00";
+        painelSubsecao.appendChild(timerDisplay);
+    }
+
+    if (modoAtual === 6) {
+        const tempoSelector = document.createElement("div");
+        tempoSelector.className = "tempo-selector";
+
+        const tempos = [
+            { min: 1, sec: 60, label: "1 Min" },
+            { min: 3, sec: 180, label: "3 Min" },
+            { min: 5, sec: 300, label: "5 Min" }
+        ];
+
+        tempos.forEach(t => {
+            const btnT = document.createElement("button");
+            btnT.className = `btn-tempo ${tempoCorrida === t.sec ? 'ativo' : ''}`;
+            btnT.innerText = t.label;
+            btnT.onclick = () => {
+                tempoCorrida = t.sec;
+                iniciarJogo(6);
+            };
+            tempoSelector.appendChild(btnT);
+        });
+
+        painelSubsecao.appendChild(tempoSelector);
+    }
 
     topContainer.appendChild(barMenu);
-    topContainer.appendChild(tituloModo);
+    topContainer.appendChild(painelSubsecao);
     tabuleiro.appendChild(topContainer);
 
     const areaEntrada = document.createElement("div");
@@ -916,7 +993,7 @@ function criarTabuleiro() {
     gridsDOM.length = 0;
     gridsDOM.push(gridPrincipal.celulas);
 
-    if (modoAtual !== 5) {
+    if (modoAtual !== 5 && modoAtual !== 8) {
         for (let t = 0; t < maxTentativas; t++) {
             const gridMini = criarGridBase(t, true);
             gridMini.container.style.opacity = t === 0 ? "1" : "0.3";
@@ -1029,7 +1106,12 @@ function verificarPalavras() {
         return { ...item, status };
     });
 
-    if (modoAtual === 5) {
+    if (modoAtual === 5 || modoAtual === 8) {
+        const historico = document.getElementById("historico");
+        if (modoAtual === 8) {
+            historico.innerHTML = "";
+        }
+
         const cardCegueta = document.createElement("div");
         cardCegueta.className = "card-tentativa-cegueta";
 
@@ -1083,10 +1165,16 @@ function verificarPalavras() {
         cardCegueta.appendChild(gridMini.container);
         cardCegueta.appendChild(resumo);
 
-        const historico = document.getElementById("historico");
         historico.appendChild(cardCegueta);
         historico.scrollTop = historico.scrollHeight;
     } else {
+        if (modoAtual === 7) {
+            for (let i = 0; i < linhaAtual; i++) {
+                const prevCard = document.getElementById(`tentativa-${i}`);
+                if (prevCard) prevCard.style.display = "none";
+            }
+        }
+
         const minicard = document.getElementById(`tentativa-${linhaAtual}`);
 
         for (let r = 0; r < 7; r++) {
@@ -1135,6 +1223,7 @@ function verificarPalavras() {
     const todasCorretas = resultados.every(r => r.tentNorm === r.palavraObj.norm);
 
     if (todasCorretas) {
+        if (timerInterval) clearInterval(timerInterval);
         linhaAtual = maxTentativas;
         setTimeout(() => {
             let resumoPalavras = palavrasAtivas.map(p => `<p><strong>${p.orien === 'H' ? 'Horizontal' : 'Vertical'}:</strong> ${p.orig}</p>`).join("");
@@ -1154,7 +1243,7 @@ function verificarPalavras() {
             c.classList.remove("focada");
         });
         
-        if (modoAtual !== 5) {
+        if (modoAtual !== 5 && modoAtual !== 8) {
             document.getElementById(`tentativa-${linhaAtual}`).style.opacity = "1";
         }
         
@@ -1171,6 +1260,7 @@ function verificarPalavras() {
 
         atualizarFoco();
     } else {
+        if (timerInterval) clearInterval(timerInterval);
         setTimeout(() => {
             let resumoPalavras = palavrasAtivas.map(p => `<p><strong>${p.orien === 'H' ? 'Horizontal' : 'Vertical'}:</strong> ${p.orig}</p>`).join("");
             exibirModal("Fim de Jogo ❌", `
