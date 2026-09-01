@@ -15,6 +15,8 @@ let focoRow = 0;
 let focoCol = 0;
 const gridsDOM = [];
 
+let historicoTentativas = []; // Guarda o histórico de jogadas
+
 let tempoCorrida = 180; // Padrão 3 min (em segundos)
 let timerInterval = null;
 let tempoRestante = 0;
@@ -22,10 +24,7 @@ let tempoRestante = 0;
 let statusTecladoPorPalavra = {};
 
 // --- Variáveis dos Novos Modos ---
-// Mutante
 let mutacaoAtual = null;
-
-// Dungeon
 let jogadorHp = 100;
 let moedas = 0;
 let ondaAtual = 1;
@@ -63,7 +62,6 @@ function gerarCruzamentoValido(qtd) {
     palavrasAtivas = [];
     cruzamentos = [];
 
-    // Oculto para economizar espaço visual, mas esta é a exata mesma lógica da fonte original para Cruzamento de 2, 3 e 4.
     if (qtd === 2) {
         while (true) {
             const idx1 = Math.floor(Math.random() * listaDePalavrasOriginal.length);
@@ -127,9 +125,50 @@ function gerarCruzamentoValido(qtd) {
         }
     }
 
-    // Fallback caso falhe na geração (modo Dungeon usa 2 de início)
     if (qtd === 4) {
-        // Implementação original de quadras simplificada por tamanho no código enviado...
+        for (let t = 0; t < 1000; t++) {
+            const r1 = Math.floor(Math.random() * 2) + 1;
+            const r2 = Math.floor(Math.random() * 2) + 4;
+            const c1 = Math.floor(Math.random() * 2) + 1;
+            const c2 = Math.floor(Math.random() * 2) + 4;
+
+            const idxH1 = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+            const h1Norm = listaDePalavrasNormalizada[idxH1];
+
+            const candV1 = [];
+            for (let i = 0; i < listaDePalavrasNormalizada.length; i++) {
+                if (i !== idxH1 && listaDePalavrasNormalizada[i][r1] === h1Norm[c1]) candV1.push(i);
+            }
+            if (candV1.length === 0) continue;
+            const idxV1 = candV1[Math.floor(Math.random() * candV1.length)];
+            const v1Norm = listaDePalavrasNormalizada[idxV1];
+
+            const candH2 = [];
+            for (let i = 0; i < listaDePalavrasNormalizada.length; i++) {
+                if (i !== idxH1 && i !== idxV1 && listaDePalavrasNormalizada[i][c1] === v1Norm[r2]) candH2.push(i);
+            }
+            if (candH2.length === 0) continue;
+            const idxH2 = candH2[Math.floor(Math.random() * candH2.length)];
+            const h2Norm = listaDePalavrasNormalizada[idxH2];
+
+            const candV2 = [];
+            for (let i = 0; i < listaDePalavrasNormalizada.length; i++) {
+                if (i !== idxH1 && i !== idxV1 && i !== idxH2 && 
+                    listaDePalavrasNormalizada[i][r1] === h1Norm[c2] && 
+                    listaDePalavrasNormalizada[i][r2] === h2Norm[c2]) {
+                    candV2.push(i);
+                }
+            }
+            if (candV2.length === 0) continue;
+            const idxV2 = candV2[Math.floor(Math.random() * candV2.length)];
+            const v2Norm = listaDePalavrasNormalizada[idxV2];
+
+            palavrasAtivas.push({ id: 0, orien: 'H', fixedPos: r1, orig: listaDePalavrasOriginal[idxH1], norm: h1Norm, derrotado: false });
+            palavrasAtivas.push({ id: 1, orien: 'V', fixedPos: c1, orig: listaDePalavrasOriginal[idxV1], norm: v1Norm, derrotado: false });
+            palavrasAtivas.push({ id: 2, orien: 'H', fixedPos: r2, orig: listaDePalavrasOriginal[idxH2], norm: h2Norm, derrotado: false });
+            palavrasAtivas.push({ id: 3, orien: 'V', fixedPos: c2, orig: listaDePalavrasOriginal[idxV2], norm: v2Norm, derrotado: false });
+            return;
+        }
         gerarCruzamentoValido(3);
     }
 }
@@ -166,17 +205,16 @@ function tempoEsgotado() {
 function iniciarJogo(modo) {
     if (timerInterval) clearInterval(timerInterval);
 
-    // Reset Dungeon State se mudou de modo
     if (modo !== 11) modoDungeonIniciado = false;
     
     modoAtual = modo;
     numPalavrasAlvo = (modo === 3 || modo === 11) ? 3 : (modo === 4 ? 4 : 2);
+    historicoTentativas = []; // Reset do histórico
     
-    // Regras de Tentativas
     if (modo === 2 || modo === 9 || modo === 10) maxTentativas = 8;
     else if (modo === 3) maxTentativas = 10;
     else if (modo === 4) maxTentativas = 12;
-    else if (modo === 5 || modo === 11) maxTentativas = Infinity; // Cegueta e Dungeon são infinitos
+    else if (modo === 5 || modo === 11) maxTentativas = Infinity;
     else if (modo === 6 || modo === 7 || modo === 8) maxTentativas = 10;
 
     const coresFundo = { 2: "#555", 3: "#555", 4: "#555", 5: "#181818", 6: "#1e3a5f", 7: "#3b1e4c", 8: "#451212", 9: "#355e3b", 10: "#5c4033", 11: "#202020" };
@@ -194,7 +232,7 @@ function iniciarJogo(modo) {
             ondaAtual = 1;
             modoDungeonIniciado = true;
         }
-        numPalavrasAlvo = ondaAtual <= 2 ? 2 : 3; // Progressão de dificuldade
+        numPalavrasAlvo = ondaAtual <= 2 ? 2 : 3;
     }
 
     gerarCruzamentoValido(numPalavrasAlvo);
@@ -221,7 +259,7 @@ function gerarMutacao() {
 }
 
 function obterNomeModo(modo) {
-    const nomes = { 2: "Cruzado", 3: "Triades", 4: "Quadras", 5: "Cegueta", 6: "Corrida", 7: "Memória", 8: "Inferno", 9: "Permuta", 10: "Mutante", 11: "Dungeon" };
+    const nomes = { 2: "Cruzado", 3: "Tríades", 4: "Quadras", 5: "Cegueta", 6: "Corrida", 7: "Memória", 8: "Inferno", 9: "Permuta", 10: "Mutante", 11: "Dungeon" };
     return nomes[modo] || "";
 }
 
@@ -295,7 +333,7 @@ function processarEntrada(tecla) {
 
 document.addEventListener("keydown", (evento) => processarEntrada(evento.key.toUpperCase()));
 
-function criarGridBase(tentativa, ehMini) {
+function criarGridBase(tentativa, ehMini, dadosHistorico = null) {
     const container = document.createElement("div");
     container.className = `tabuleiro-tentativa ${ehMini ? 'mini' : 'principal'}`;
     container.id = ehMini ? `tentativa-${tentativa}` : 'grid-principal';
@@ -311,7 +349,16 @@ function criarGridBase(tentativa, ehMini) {
                 caixa.className = "letra";
                 caixa.dataset.row = r;
                 caixa.dataset.col = c;
-                if (!ehMini) caixa.addEventListener("click", () => focarCelulaPorPos(r, c));
+                
+                if (ehMini && dadosHistorico) {
+                    const celHist = dadosHistorico.find(d => d.r === r && d.c === c);
+                    if (celHist) {
+                        caixa.innerText = celHist.char;
+                        caixa.classList.add(celHist.status);
+                    }
+                } else if (!ehMini) {
+                    caixa.addEventListener("click", () => focarCelulaPorPos(r, c));
+                }
                 celulas.push(caixa);
             } else {
                 caixa.className = "letra escondida";
@@ -330,26 +377,40 @@ function renderizarUI() {
         const estiloGrid = document.createElement('style');
         estiloGrid.id = "estilo-jogo";
         estiloGrid.innerHTML = `
-            /* INSIRA TODO SEU CSS ORIGINAL AQUI */
-            body, html { margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; transition: background-color 0.3s ease; }
-            #tabuleiro { position: relative; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; width: 100%; height: 100vh; margin: 0 auto; box-sizing: border-box; }
+            body, html { margin: 0; padding: 0; overflow-x: hidden; width: 100%; min-height: 100vh; transition: background-color 0.3s ease; }
+            #tabuleiro { position: relative; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; width: 100%; min-height: 100vh; box-sizing: border-box; }
             .bar-menu { display: flex; justify-content: space-between; width: 100%; max-width: 800px; margin-bottom: 5px; }
             .modos-container { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-            .btn-modo { background: rgba(0,0,0,0.3); color: #aaa; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+            .btn-modo { background: rgba(0,0,0,0.3); color: #aaa; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
             .btn-modo.ativo { background: #3aa394; color: #fff; border-color: #3aa394; }
             .painel-subsecao { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 4px; color: #fff; font-family: sans-serif; }
-            #area-entrada { display: flex; justify-content: center; align-items: center; flex-grow: 1; padding: 10px 0; }
-            .tabuleiro-tentativa { display: grid; grid-template-columns: repeat(7, min(7.5vh, 62px)); grid-template-rows: repeat(7, min(7.5vh, 62px)); gap: 6px; }
-            .letra { width: 100%; height: 100%; color: #ccc; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; text-transform: uppercase; border-radius: 6px; }
+            #area-entrada { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; padding: 10px 0; gap: 15px; }
+            
+            .tabuleiro-tentativa.principal { display: grid; grid-template-columns: repeat(7, min(6.5vh, 52px)); grid-template-rows: repeat(7, min(6.5vh, 52px)); gap: 6px; }
+            .letra { width: 100%; height: 100%; color: #ccc; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; cursor: pointer; text-transform: uppercase; border-radius: 6px; }
             .letra.escondida { border: none !important; background: transparent !important; cursor: default; }
             .letra.focada { border-color: #fff !important; border-bottom: 5px solid #3aa394 !important; background: rgba(255,255,255,0.25); }
-            /* CLASSES NOVAS: Dungeon e Permuta */
+            
+            /* Status das Letras */
+            .letra.correto { background-color: #3aa394 !important; color: #fff !important; border-color: #3aa394 !important; }
+            .letra.presente { background-color: #d3ad69 !important; color: #fff !important; border-color: #d3ad69 !important; }
+            .letra.ausente { background-color: #3a3a3c !important; color: #aaa !important; border-color: #3a3a3c !important; }
+
+            /* Painel do Histórico */
+            #historico-container { display: flex; gap: 10px; overflow-x: auto; max-width: 90vw; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+            .tabuleiro-tentativa.mini { display: grid; grid-template-columns: repeat(7, 20px); grid-template-rows: repeat(7, 20px); gap: 2px; }
+            .tabuleiro-tentativa.mini .letra { font-size: 11px; border-width: 1px; border-radius: 3px; cursor: default; }
+
             .dungeon-status { background: #222; border: 2px solid #8B0000; padding: 10px; border-radius: 8px; font-weight: bold; }
             .rack-permuta { background: #d3ad69; color: #000; padding: 10px 20px; font-size: 20px; font-weight: bold; border-radius: 8px; letter-spacing: 3px;}
-            /* Teclado e afins */
+            
             #teclado { display: flex; flex-direction: column; gap: 6px; align-items: center; margin-bottom: 10px; width: 100%; max-width: 680px; }
             .linha-teclado { display: flex; gap: 6px; width: 100%; justify-content: center; }
-            .tecla { height: min(8vh, 60px); min-width: 40px; flex: 1; background-color: rgba(0,0,0,0.35); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+            .tecla { height: min(7vh, 50px); min-width: 35px; flex: 1; background-color: rgba(0,0,0,0.35); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+            .tecla.correto { background-color: #3aa394 !important; }
+            .tecla.presente { background-color: #d3ad69 !important; }
+            .tecla.ausente { background-color: #222 !important; color: #666 !important; }
+            
             .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000;}
             .modal-conteudo { background: #222; color: #fff; padding: 25px; border-radius: 8px; max-width: 500px; text-align: center; }
             .modal-btn { margin-top: 15px; padding: 10px 20px; background-color: #3aa394; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
@@ -360,10 +421,14 @@ function renderizarUI() {
     const topContainer = document.createElement("div");
     topContainer.style.display = "flex"; topContainer.style.flexDirection = "column"; topContainer.style.alignItems = "center"; topContainer.style.width = "100%";
     
-    // Bar Menu
+    // Bar Menu - TODOS OS MODOS INCLUÍDOS
     const barMenu = document.createElement("div"); barMenu.className = "bar-menu";
     const modosContainer = document.createElement("div"); modosContainer.className = "modos-container";
-    const modosInfo = [ {key: 2, label:"Cruz"}, {key: 3, label:"Tria"}, {key: 5, label:"Cegu"}, {key: 9, label:"Perm"}, {key: 10, label:"Muta"}, {key: 11, label:"Dung"} ];
+    const modosInfo = [
+        {key: 2, label:"Cruz"}, {key: 3, label:"Tria"}, {key: 4, label:"Quad"},
+        {key: 5, label:"Cegu"}, {key: 6, label:"Corr"}, {key: 7, label:"Memó"},
+        {key: 8, label:"Infe"}, {key: 9, label:"Perm"}, {key: 10, label:"Muta"}, {key: 11, label:"Dung"}
+    ];
     modosInfo.forEach(m => {
         const btn = document.createElement("button"); btn.className = `btn-modo ${modoAtual === m.key ? 'ativo' : ''}`;
         btn.innerText = m.label; btn.onclick = () => iniciarJogo(m.key);
@@ -372,14 +437,19 @@ function renderizarUI() {
     barMenu.appendChild(modosContainer);
     topContainer.appendChild(barMenu);
 
-    // Painel Subsecao
+    // Painel Subseção
     const painelSubsecao = document.createElement("div"); painelSubsecao.className = "painel-subsecao";
     const tituloModo = document.createElement("div");
-    tituloModo.style.fontSize = "24px"; tituloModo.style.fontWeight = "bold";
+    tituloModo.style.fontSize = "22px"; tituloModo.style.fontWeight = "bold";
     tituloModo.innerText = modoAtual === 10 ? `Mutante: ${mutacaoAtual.desc}` : obterNomeModo(modoAtual);
     painelSubsecao.appendChild(tituloModo);
 
-    // Renderizações Específicas de Modo
+    if (modoAtual === 6 || modoAtual === 8) {
+        const timerDisp = document.createElement("div");
+        timerDisp.id = "timer-display"; timerDisp.style.fontSize = "20px";
+        painelSubsecao.appendChild(timerDisp);
+    }
+
     if (modoAtual === 9) {
         let todasAsLetras = [];
         palavrasAtivas.forEach(p => todasAsLetras.push(...p.norm.toUpperCase().split("")));
@@ -399,12 +469,26 @@ function renderizarUI() {
     tabuleiro.appendChild(topContainer);
 
     const areaEntrada = document.createElement("div"); areaEntrada.id = "area-entrada";
+    
+    // Tabuleiro Principal
     const gridPrincipal = criarGridBase(0, false);
     areaEntrada.appendChild(gridPrincipal.container);
     gridsDOM.length = 0; gridsDOM.push(gridPrincipal.celulas);
+
+    // Histórico de Tentativas (Mini Tabuleiros)
+    if (historicoTentativas.length > 0) {
+        const historicoContainer = document.createElement("div");
+        historicoContainer.id = "historico-container";
+        historicoTentativas.forEach((hist, index) => {
+            const miniGrid = criarGridBase(index + 1, true, hist);
+            historicoContainer.appendChild(miniGrid.container);
+        });
+        areaEntrada.appendChild(historicoContainer);
+    }
+
     tabuleiro.appendChild(areaEntrada);
     
-    // Teclado Simplificado p/ Código
+    // Teclado
     const teclado = document.createElement("div"); teclado.id = "teclado";
     const layout = [ ["Q","W","E","R","T","Y","U","I","O","P"], ["A","S","D","F","G","H","J","K","L"], ["ENTER","Z","X","C","V","B","N","M","BACKSPACE"] ];
     layout.forEach(linha => {
@@ -445,7 +529,6 @@ function verificarPalavras() {
     const celulasAtuais = gridsDOM[0];
     const tentativasPorPalavra = [];
 
-    // Captura as palavras vivas
     for (let p of palavrasAtivas.filter(p => !p.derrotado)) {
         let tentNorm = "";
         for (let i = 0; i < 7; i++) {
@@ -459,7 +542,6 @@ function verificarPalavras() {
 
         tentNorm = normalizarTexto(tentNorm);
         
-        // Verifica Mutação no Modo 10
         if (modoAtual === 10 && mutacaoAtual && !mutacaoAtual.check(tentNorm)) {
             alert(`Violação: ${mutacaoAtual.desc}`);
             return;
@@ -472,10 +554,48 @@ function verificarPalavras() {
         tentativasPorPalavra.push({ palavraObj: p, tentNorm: tentNorm });
     }
 
-    // Processamento de Acerto
+    // Gerar Feedback Visual (Cores Verde, Amarelo e Cinza)
+    const estadoGridAtual = [];
+    celulasAtuais.forEach(cel => {
+        const r = parseInt(cel.dataset.row);
+        const c = parseInt(cel.dataset.col);
+        const char = cel.innerText;
+        if (!char) return;
+
+        let status = 'ausente';
+        const normChar = normalizarTexto(char);
+
+        for (let p of palavrasAtivas.filter(p => !p.derrotado)) {
+            if (p.orien === 'H' && p.fixedPos === r) {
+                if (p.norm[c] === normChar) status = 'correto';
+                else if (status !== 'correto' && p.norm.includes(normChar)) status = 'presente';
+            } else if (p.orien === 'V' && p.fixedPos === c) {
+                if (p.norm[r] === normChar) status = 'correto';
+                else if (status !== 'correto' && p.norm.includes(normChar)) status = 'presente';
+            }
+        }
+
+        estadoGridAtual.push({ r, c, char, status });
+
+        // Atualizar Teclado Virtual
+        const btnsTecla = Array.from(document.querySelectorAll('.tecla')).filter(b => b.innerText === char);
+        btnsTecla.forEach(btn => {
+            if (status === 'correto') {
+                btn.classList.remove('presente', 'ausente');
+                btn.classList.add('correto');
+            } else if (status === 'presente' && !btn.classList.contains('correto')) {
+                btn.classList.remove('ausente');
+                btn.classList.add('presente');
+            } else if (status === 'ausente' && !btn.classList.contains('correto') && !btn.classList.contains('presente')) {
+                btn.classList.add('ausente');
+            }
+        });
+    });
+
+    historicoTentativas.push(estadoGridAtual);
+
     const todosCertos = tentativasPorPalavra.every(r => r.tentNorm === r.palavraObj.norm);
     
-    // --- LÓGICA DUNGEON ---
     if (modoAtual === 11) {
         let inimigosVivos = 0;
         
@@ -519,13 +639,11 @@ function verificarPalavras() {
         if (linhaAtual >= maxTentativas) {
             exibirModal("Fim de Jogo ❌", "<p>Tentativas esgotadas.</p>", "Tentar Novamente", () => iniciarJogo(modoAtual));
         } else {
-            celulasAtuais.forEach(c => c.innerText = "");
-            atualizarFoco();
+            renderizarUI();
         }
     }
 }
 
-// Loja da Dungeon
 function abrirLojaDungeon() {
     exibirModal("Loja do Mercador 🛒", `
         <p>Você completou a onda ${ondaAtual}!</p>
