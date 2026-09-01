@@ -2,7 +2,7 @@ let listaDePalavrasOriginal = [];
 let listaDePalavrasNormalizada = [];
 
 // Estado da Partida
-let modoAtual = 2; // 2: Cruzado, 3: Triades, 4: Quadras, 5: Cegueta, 6: Corrida, 7: Memória, 8: Inferno, 9: Permuta, 10: Mutante
+let modoAtual = 2; // 2: Cruzado, 3: Triades, 4: Quadras, 5: Cegueta, 6: Corrida, 7: Memória, 8: Inferno, 9: Permuta, 10: Mutante, 11: Cúbicos
 let numPalavrasAlvo = 2;
 let palavrasAtivas = [];
 let cruzamentos = [];
@@ -69,7 +69,15 @@ function sortearRegraMutante() {
 
 function obterInfoLetrasPermuta() {
     if (!palavrasAtivas || palavrasAtivas.length < 2) return "";
-    const todasLetras = (palavrasAtivas[0].orig + palavrasAtivas[1].orig).split("");
+    const pH = palavrasAtivas.find(p => p.orien === 'H');
+    const pV = palavrasAtivas.find(p => p.orien === 'V');
+    if (!pH || !pV) return "";
+
+    const letrasH = pH.orig.split("");
+    const letrasV = pV.orig.split("");
+    letrasV.splice(pH.fixedPos, 1);
+
+    const todasLetras = letrasH.concat(letrasV);
     const contagem = {};
     todasLetras.forEach(l => {
         contagem[l] = (contagem[l] || 0) + 1;
@@ -139,7 +147,7 @@ function gerarCruzamentoValido(qtd) {
                 palavrasAtivas.push({ id: 0, orien: 'H', fixedPos: r1, orig: listaDePalavrasOriginal[idx1], norm: h1Norm });
                 palavrasAtivas.push({ id: 1, orien: 'V', fixedPos: c1, orig: listaDePalavrasOriginal[idx2], norm: listaDePalavrasNormalizada[idx2] });
                 cruzamentos.push({ row: r1, col: c1, palHIdx: 0, posH: c1, palVIdx: 1, posV: r1 });
-                return;
+                return true;
             }
         }
     }
@@ -179,7 +187,7 @@ function gerarCruzamentoValido(qtd) {
 
             cruzamentos.push({ row: r1, col: c1, palHIdx: 0, posH: c1, palVIdx: 1, posV: r1 });
             cruzamentos.push({ row: r2, col: c1, palHIdx: 2, posH: c1, palVIdx: 1, posV: r2 });
-            return;
+            return true;
         }
     }
 
@@ -248,8 +256,105 @@ function gerarCruzamentoValido(qtd) {
             cruzamentos.push({ row: r1, col: c2, palHIdx: 0, posH: c2, palVIdx: 3, posV: r1 });
             cruzamentos.push({ row: r2, col: c2, palHIdx: 2, posH: c2, palVIdx: 3, posV: r2 });
 
-            return;
+            return true;
         }
+    }
+
+    if (qtd === 8) {
+        const patternMap = new Map();
+        for (let i = 0; i < listaDePalavrasNormalizada.length; i++) {
+            const w = listaDePalavrasNormalizada[i];
+            const pattern = w[0] + w[2] + w[4] + w[6];
+            if (!patternMap.has(pattern)) {
+                patternMap.set(pattern, []);
+            }
+            patternMap.get(pattern).push(i);
+        }
+
+        const rows = [0, 2, 4, 6];
+        const cols = [0, 2, 4, 6];
+        const maxTentativasSorteio = 2000;
+
+        for (let t = 0; t < maxTentativasSorteio; t++) {
+            const idxV = [];
+            const usedIndices = new Set();
+            let falhouV = false;
+
+            for (let j = 0; j < 4; j++) {
+                const randIdx = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+                if (usedIndices.has(randIdx)) {
+                    falhouV = true;
+                    break;
+                }
+                usedIndices.add(randIdx);
+                idxV.push(randIdx);
+            }
+            if (falhouV) continue;
+
+            const vNorms = idxV.map(idx => listaDePalavrasNormalizada[idx]);
+            const idxH = [];
+            let possivel = true;
+
+            for (let i = 0; i < 4; i++) {
+                const reqPattern = vNorms[0][rows[i]] + vNorms[1][rows[i]] + vNorms[2][rows[i]] + vNorms[3][rows[i]];
+                const candidatos = patternMap.get(reqPattern);
+                if (!candidatos) {
+                    possivel = false;
+                    break;
+                }
+
+                const validos = candidatos.filter(idx => !usedIndices.has(idx));
+                if (validos.length === 0) {
+                    possivel = false;
+                    break;
+                }
+
+                const escolhido = validos[Math.floor(Math.random() * validos.length)];
+                usedIndices.add(escolhido);
+                idxH.push(escolhido);
+            }
+
+            if (possivel) {
+                for (let i = 0; i < 4; i++) {
+                    const idx = idxH[i];
+                    palavrasAtivas.push({
+                        id: i,
+                        orien: 'H',
+                        fixedPos: rows[i],
+                        orig: listaDePalavrasOriginal[idx],
+                        norm: listaDePalavrasNormalizada[idx]
+                    });
+                }
+                for (let j = 0; j < 4; j++) {
+                    const idx = idxV[j];
+                    palavrasAtivas.push({
+                        id: 4 + j,
+                        orien: 'V',
+                        fixedPos: cols[j],
+                        orig: listaDePalavrasOriginal[idx],
+                        norm: listaDePalavrasNormalizada[idx]
+                    });
+                }
+
+                cruzamentos = [];
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        cruzamentos.push({
+                            row: rows[i],
+                            col: cols[j],
+                            palHIdx: i,
+                            posH: cols[j],
+                            palVIdx: 4 + j,
+                            posV: rows[i]
+                        });
+                    }
+                }
+                return true;
+            }
+        }
+
+        alert("Não foi possível sortear um tabuleiro válido para o modo Cúbicos. Tente novamente!");
+        return false;
     }
 }
 
@@ -290,12 +395,15 @@ function iniciarJogo(modo) {
     if (timerInterval) clearInterval(timerInterval);
 
     modoAtual = modo;
-    numPalavrasAlvo = (modo === 3) ? 3 : (modo === 4 ? 4 : 2);
+    if (modo === 3) numPalavrasAlvo = 3;
+    else if (modo === 4) numPalavrasAlvo = 4;
+    else if (modo === 11) numPalavrasAlvo = 8;
+    else numPalavrasAlvo = 2;
     
     if (modo === 2 || modo === 9 || modo === 10) maxTentativas = 8;
     else if (modo === 3) maxTentativas = 10;
     else if (modo === 4) maxTentativas = 12;
-    else if (modo === 5) maxTentativas = Infinity;
+    else if (modo === 5 || modo === 11) maxTentativas = Infinity;
     else if (modo === 6 || modo === 7 || modo === 8) maxTentativas = 10;
 
     const coresFundo = {
@@ -307,7 +415,8 @@ function iniciarJogo(modo) {
         7: "#3b1e4c",
         8: "#451212",
         9: "#1b4332",
-        10: "#5c0029"
+        10: "#5c0029",
+        11: "#2b1d38"
     };
 
     document.body.style.backgroundColor = coresFundo[modo] || "#555555";
@@ -316,7 +425,8 @@ function iniciarJogo(modo) {
     direcaoAtual = 'H';
     statusTecladoPorPalavra = {};
 
-    gerarCruzamentoValido(numPalavrasAlvo);
+    const gerado = gerarCruzamentoValido(numPalavrasAlvo);
+    if (gerado === false) return;
 
     if (modo === 10) {
         sortearRegraMutante();
@@ -702,6 +812,7 @@ function obterNomeModo(modo) {
     if (modo === 8) return "Inferno";
     if (modo === 9) return "Permuta";
     if (modo === 10) return "Mutante";
+    if (modo === 11) return "Cúbicos";
     return "";
 }
 
@@ -752,6 +863,8 @@ function exibirModalComoJogar() {
         regrasModo = "<p><strong>Modo Permuta:</strong> Como o cruzado normal, mas as letras de ambas as palavras juntas e suas quantidades são exibidas embaralhadas. Descubra a ordem correta!</p>";
     } else if (modoAtual === 10) {
         regrasModo = "<p><strong>Modo Mutante:</strong> Adivinhe as 2 palavras cruzadas em até 8 tentativas, mas respeite a regra especial exigida antes de cada tentativa!</p>";
+    } else if (modoAtual === 11) {
+        regrasModo = "<p><strong>Modo Cúbicos:</strong> Tentativas ilimitadas para 8 palavras cruzadas (4 horizontais e 4 verticais). Apenas contadores de acertos são exibidos!</p>";
     }
 
     const regras = `
@@ -928,7 +1041,7 @@ function criarTecladoVirtual() {
 }
 
 function atualizarStatusTecladoGradiente(letra, idxPalavra, novoStatus) {
-    if (modoAtual === 5 || modoAtual === 8) return;
+    if (modoAtual === 5 || modoAtual === 8 || modoAtual === 11) return;
 
     const letraNorm = normalizarTexto(letra).toUpperCase();
     const botao = document.querySelector(`.tecla[data-key="${letraNorm}"]`);
@@ -990,7 +1103,8 @@ function criarTabuleiro() {
         { key: 7, label: "Memória" },
         { key: 8, label: "Inferno" },
         { key: 9, label: "Permuta" },
-        { key: 10, label: "Mutante" }
+        { key: 10, label: "Mutante" },
+        { key: 11, label: "Cúbicos" }
     ];
 
     modosInfo.forEach(m => {
@@ -1082,7 +1196,7 @@ function criarTabuleiro() {
     gridsDOM.length = 0;
     gridsDOM.push(gridPrincipal.celulas);
 
-    if (modoAtual !== 5 && modoAtual !== 7 && modoAtual !== 8) {
+    if (modoAtual !== 5 && modoAtual !== 7 && modoAtual !== 8 && modoAtual !== 11) {
         for (let t = 0; t < maxTentativas; t++) {
             const gridMini = criarGridBase(t, true);
             gridMini.container.style.opacity = t === 0 ? "1" : "0.3";
@@ -1157,7 +1271,7 @@ function verificarPalavras() {
         tentNorm = normalizarTexto(tentNorm);
         const idxDict = listaDePalavrasNormalizada.indexOf(tentNorm);
 
-        if (idxDict === -1) {
+        if (modoAtual !== 9 && idxDict === -1) {
             alert(`A palavra "${tentNorm.toUpperCase()}" não existe no dicionário!`);
             return;
         }
@@ -1165,7 +1279,7 @@ function verificarPalavras() {
         tentativasPorPalavra.push({
             palavraObj: p,
             tentNorm: tentNorm,
-            exibicao: listaDePalavrasOriginal[idxDict]
+            exibicao: idxDict !== -1 ? listaDePalavrasOriginal[idxDict] : tentNorm.toUpperCase()
         });
     }
 
@@ -1206,7 +1320,7 @@ function verificarPalavras() {
 
     const historico = document.getElementById("historico");
 
-    if (modoAtual === 5 || modoAtual === 8) {
+    if (modoAtual === 5 || modoAtual === 8 || modoAtual === 11) {
         if (modoAtual === 8) {
             historico.innerHTML = ""; // Esconde tentativas anteriores no modo Inferno
         }
@@ -1391,7 +1505,7 @@ function verificarPalavras() {
             c.classList.remove("focada");
         });
         
-        if (modoAtual !== 5 && modoAtual !== 7 && modoAtual !== 8) {
+        if (modoAtual !== 5 && modoAtual !== 7 && modoAtual !== 8 && modoAtual !== 11) {
             document.getElementById(`tentativa-${linhaAtual}`).style.opacity = "1";
         }
         
