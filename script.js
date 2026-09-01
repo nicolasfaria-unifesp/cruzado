@@ -2,7 +2,7 @@ let listaDePalavrasOriginal = [];
 let listaDePalavrasNormalizada = [];
 
 // Estado da Partida
-let modoAtual = 2; // 2: Cruzado, 3: Triades, 4: Quadras, 5: Cegueta, 6: Corrida, 7: Memória, 8: Inferno, 9: Permuta, 10: Mutante, 11: Cúbicos
+let modoAtual = 2; // 2: Cruzado, 3: Tríades, 4: Quadras, 5: Cegueta, 6: Corrida, 7: Memória, 8: Inferno, 9: Permuta, 10: Mutante, 11: Cúbicos
 let numPalavrasAlvo = 2;
 let palavrasAtivas = [];
 let cruzamentos = [];
@@ -19,6 +19,32 @@ let tempoRestante = 0;
 
 let statusTecladoPorPalavra = {};
 let regraMutanteAtual = null;
+
+let moedas = parseInt(localStorage.getItem("moedas")) || 0;
+
+const modificadoresModo = {
+    2: 100,
+    9: 120,
+    10: 140,
+    3: 150,
+    6: 160,
+    7: 180,
+    5: 200,
+    4: 250,
+    8: 350,
+    11: 500
+};
+
+function salvarMoedas(qtd) {
+    moedas += qtd;
+    localStorage.setItem("moedas", moedas);
+    atualizarDisplayMoedas();
+}
+
+function atualizarDisplayMoedas() {
+    const el = document.getElementById("moedas-display");
+    if (el) el.innerText = `🪙 ${moedas}`;
+}
 
 function contaVogais(str) {
     return (str.match(/[aeiou]/g) || []).length;
@@ -804,7 +830,7 @@ function iniciarJogo(modo) {
 
 function obterNomeModo(modo) {
     if (modo === 2) return "Cruzado";
-    if (modo === 3) return "Triades";
+    if (modo === 3) return "Tríades";
     if (modo === 4) return "Quadras";
     if (modo === 5) return "Cegueta";
     if (modo === 6) return "Corrida";
@@ -848,7 +874,7 @@ function exibirModalComoJogar() {
     if (modoAtual === 2) {
         regrasModo = "<p><strong>Modo Cruzado:</strong> Adivinhe as <strong>2 palavras cruzadas</strong> em até <strong>8 tentativas</strong>.</p>";
     } else if (modoAtual === 3) {
-        regrasModo = "<p><strong>Modo Triades:</strong> Adivinhe as <strong>3 palavras cruzadas</strong> em até <strong>10 tentativas</strong>.</p>";
+        regrasModo = "<p><strong>Modo Tríades:</strong> Adivinhe as <strong>3 palavras cruzadas</strong> em até <strong>10 tentativas</strong>.</p>";
     } else if (modoAtual === 4) {
         regrasModo = "<p><strong>Modo Quadras:</strong> Adivinhe as <strong>4 palavras cruzadas</strong> em até <strong>12 tentativas</strong>.</p>";
     } else if (modoAtual === 5) {
@@ -864,7 +890,7 @@ function exibirModalComoJogar() {
     } else if (modoAtual === 10) {
         regrasModo = "<p><strong>Modo Mutante:</strong> Adivinhe as 2 palavras cruzadas em até 8 tentativas, mas respeite a regra especial exigida antes de cada tentativa!</p>";
     } else if (modoAtual === 11) {
-        regrasModo = "<p><strong>Modo Cúbicos:</strong> Tentativas ilimitadas para 8 palavras cruzadas (4 horizontais e 4 verticais). Apenas contadores de acertos são exibidos!</p>";
+        regrasModo = "<p><strong>Modo Cúbicos:</strong> Tentativas ilimitadas para 8 palavras cruzadas (4 horizontais e 4 verticais).</p>";
     }
 
     const regras = `
@@ -1041,7 +1067,7 @@ function criarTecladoVirtual() {
 }
 
 function atualizarStatusTecladoGradiente(letra, idxPalavra, novoStatus) {
-    if (modoAtual === 5 || modoAtual === 8 || modoAtual === 11) return;
+    if (modoAtual === 5 || modoAtual === 8) return;
 
     const letraNorm = normalizarTexto(letra).toUpperCase();
     const botao = document.querySelector(`.tecla[data-key="${letraNorm}"]`);
@@ -1096,7 +1122,7 @@ function criarTabuleiro() {
 
     const modosInfo = [
         { key: 2, label: "Cruzado" },
-        { key: 3, label: "Triades" },
+        { key: 3, label: "Tríades" },
         { key: 4, label: "Quadras" },
         { key: 5, label: "Cegueta" },
         { key: 6, label: "Corrida" },
@@ -1130,6 +1156,15 @@ function criarTabuleiro() {
     tituloModo.className = "titulo-modo";
     tituloModo.innerText = obterNomeModo(modoAtual);
     painelSubsecao.appendChild(tituloModo);
+
+    const moedasDisplay = document.createElement("div");
+    moedasDisplay.className = "timer-display";
+    moedasDisplay.id = "moedas-display";
+    moedasDisplay.style.fontSize = "16px";
+    moedasDisplay.style.color = "#ffd700";
+    moedasDisplay.style.borderColor = "rgba(255, 215, 0, 0.3)";
+    moedasDisplay.innerText = `🪙 ${moedas}`;
+    painelSubsecao.appendChild(moedasDisplay);
 
     if (modoAtual === 6 || modoAtual === 8) {
         const timerDisplay = document.createElement("div");
@@ -1320,7 +1355,7 @@ function verificarPalavras() {
 
     const historico = document.getElementById("historico");
 
-    if (modoAtual === 5 || modoAtual === 8 || modoAtual === 11) {
+    if (modoAtual === 5 || modoAtual === 8) {
         if (modoAtual === 8) {
             historico.innerHTML = ""; // Esconde tentativas anteriores no modo Inferno
         }
@@ -1382,7 +1417,6 @@ function verificarPalavras() {
         historico.scrollTop = historico.scrollHeight;
     } 
     else if (modoAtual === 7) {
-        // Modo Memória: Apaga a tentativa anterior e substitui pela atual com todas as cores visíveis
         historico.innerHTML = "";
 
         const gridMini = criarGridBase(linhaAtual, true);
@@ -1431,8 +1465,55 @@ function verificarPalavras() {
 
         historico.appendChild(gridMini.container);
     } 
+    else if (modoAtual === 11) {
+        const gridMini = criarGridBase(linhaAtual, true);
+
+        for (let r = 0; r < 7; r++) {
+            for (let c = 0; c < 7; c++) {
+                const miniCell = gridMini.container.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                if (!miniCell) continue;
+
+                const resH = resultados.find(res => res.palavraObj.orien === 'H' && res.palavraObj.fixedPos === r);
+                const resV = resultados.find(res => res.palavraObj.orien === 'V' && res.palavraObj.fixedPos === c);
+
+                if (resH && resV) {
+                    miniCell.innerText = resH.exibicao[c];
+                    const stH = resH.status[c];
+                    const stV = resV.status[r];
+
+                    let statusFinal = "errada";
+                    if (stH === "correta" || stV === "correta") {
+                        statusFinal = "correta";
+                    } 
+                    else if (stH === "lugar-errado" && stV === "lugar-errado") {
+                        statusFinal = "cruzamento-duplo";
+                    } 
+                    else if (stH === "lugar-errado" || stV === "lugar-errado") {
+                        statusFinal = "lugar-errado";
+                    }
+
+                    miniCell.classList.add(statusFinal);
+
+                    atualizarStatusTecladoGradiente(resH.exibicao[c], resH.palavraObj.id, stH);
+                    atualizarStatusTecladoGradiente(resV.exibicao[r], resV.palavraObj.id, stV);
+                } 
+                else if (resH) {
+                    miniCell.innerText = resH.exibicao[c];
+                    miniCell.classList.add(resH.status[c]);
+                    atualizarStatusTecladoGradiente(resH.exibicao[c], resH.palavraObj.id, resH.status[c]);
+                } 
+                else if (resV) {
+                    miniCell.innerText = resV.exibicao[r];
+                    miniCell.classList.add(resV.status[r]);
+                    atualizarStatusTecladoGradiente(resV.exibicao[r], resV.palavraObj.id, resV.status[r]);
+                }
+            }
+        }
+
+        historico.appendChild(gridMini.container);
+        historico.scrollTop = historico.scrollHeight;
+    }
     else {
-        // Modos padrões com histórico fixo
         const minicard = document.getElementById(`tentativa-${linhaAtual}`);
 
         for (let r = 0; r < 7; r++) {
@@ -1482,11 +1563,17 @@ function verificarPalavras() {
 
     if (todasCorretas) {
         if (timerInterval) clearInterval(timerInterval);
+        const tentativasUsadas = linhaAtual + 1;
+        const mod = modificadoresModo[modoAtual] || 100;
+        const moedasGanhas = Math.floor(mod / Math.max(tentativasUsadas, 3));
+        salvarMoedas(moedasGanhas);
+
         linhaAtual = maxTentativas;
         setTimeout(() => {
             let resumoPalavras = palavrasAtivas.map(p => `<p><strong>${p.orien === 'H' ? 'Horizontal' : 'Vertical'}:</strong> ${p.orig}</p>`).join("");
             exibirModal("Você Venceu! 🎉", `
                 <p>Parabéns! Você descobriu todas as palavras!</p>
+                <p><strong>Moedas ganhas: 🪙 ${moedasGanhas}</strong></p>
                 ${resumoPalavras}
             `, "Jogar Novamente", () => iniciarJogo(modoAtual));
         }, 150);
