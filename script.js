@@ -816,6 +816,121 @@ function iniciarJogo(modo) {
             cursor: pointer;
             font-size: 16px;
         }
+
+        @media (max-width: 600px), (max-height: 700px) {
+            #tabuleiro {
+                padding: 5px;
+            }
+
+            .bar-menu {
+                margin-bottom: 2px;
+            }
+
+            .btn-modo {
+                padding: 4px 8px;
+                font-size: 11px;
+                border-radius: 4px;
+            }
+
+            .btn-ajuda {
+                width: 30px;
+                height: 30px;
+                font-size: 15px;
+            }
+
+            .painel-subsecao {
+                gap: 8px;
+                margin-top: 2px;
+            }
+
+            .titulo-modo {
+                font-size: 18px;
+            }
+
+            .timer-display {
+                font-size: 14px !important;
+                padding: 2px 8px;
+            }
+
+            .btn-tempo {
+                padding: 2px 6px;
+                font-size: 11px;
+            }
+
+            .tabuleiro-tentativa {
+                grid-template-columns: repeat(7, min(5.2vh, 42px));
+                grid-template-rows: repeat(7, min(5.2vh, 42px));
+                gap: 3px;
+            }
+
+            .letra {
+                font-size: min(3vh, 20px);
+                border-radius: 4px;
+                border-width: 1px;
+            }
+
+            .letra.focada {
+                border-bottom-width: 3px !important;
+            }
+
+            .historico-tentativas {
+                position: static;
+                transform: none;
+                flex-direction: row;
+                max-height: none;
+                max-width: 100%;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding-right: 0;
+                padding-bottom: 5px;
+                margin-bottom: 5px;
+            }
+
+            .tabuleiro-tentativa.mini {
+                grid-template-columns: repeat(7, 12px);
+                grid-template-rows: repeat(7, 12px);
+                gap: 2px;
+            }
+
+            .mini .letra {
+                font-size: 7px;
+            }
+
+            .card-tentativa-cegueta {
+                padding: 4px 6px;
+                gap: 6px;
+            }
+
+            .resumo-cegueta {
+                font-size: 10px;
+                gap: 2px;
+            }
+
+            .tag-cor {
+                padding: 1px 4px;
+            }
+
+            #teclado {
+                gap: 4px;
+                margin-bottom: 5px;
+            }
+
+            .linha-teclado {
+                gap: 3px;
+            }
+
+            .tecla {
+                height: min(6vh, 44px);
+                min-width: 28px;
+                font-size: 13px;
+                padding: 0 2px;
+                border-radius: 4px;
+            }
+
+            .tecla.especial {
+                font-size: 11px;
+            }
+        }
     `;
     document.head.appendChild(estiloGrid);
 
