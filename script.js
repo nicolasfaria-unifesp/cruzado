@@ -69,33 +69,31 @@ function gerarCruzamentoValido(qtd) {
             if (idx2 === idx1) continue;
 
             const cand2Norm = listaDePalavrasNormalizada[idx2];
-            const cruzPossiveis = [];
+            const colsPossiveis = [];
 
-            for (let i = 0; i < 7; i++) {
-                for (let j = 0; j < 7; j++) {
-                    if (palavrasAtivas[0].norm[i] === cand2Norm[j]) {
-                        cruzPossiveis.push({ posH: i, posV: j });
-                    }
+            for (let c = 0; c < 7; c++) {
+                if (palavrasAtivas[0].norm[c] === cand2Norm[row1]) {
+                    colsPossiveis.push(c);
                 }
             }
 
-            if (cruzPossiveis.length > 0) {
-                const escolhat = cruzPossiveis[Math.floor(Math.random() * cruzPossiveis.length)];
+            if (colsPossiveis.length > 0) {
+                const colEscolhida = colsPossiveis[Math.floor(Math.random() * colsPossiveis.length)];
                 palavrasAtivas.push({
                     id: 1,
                     orien: 'V',
-                    fixedPos: escolhat.posH,
+                    fixedPos: colEscolhida,
                     orig: listaDePalavrasOriginal[idx2],
-                    norm: listaDePalavrasNormalizada[idx2]
+                    norm: cand2Norm
                 });
 
                 cruzamentos.push({
                     row: row1,
-                    col: escolhat.posH,
+                    col: colEscolhida,
                     palHIdx: 0,
-                    posH: escolhat.posH,
+                    posH: colEscolhida,
                     palVIdx: 1,
-                    posV: escolhat.posV
+                    posV: row1
                 });
 
                 p2Valida = true;
@@ -117,59 +115,108 @@ function gerarCruzamentoValido(qtd) {
                 if (palavrasAtivas.some(p => p.orig === listaDePalavrasOriginal[idxN])) continue;
 
                 const candNorm = listaDePalavrasNormalizada[idxN];
-                const opostas = palavrasAtivas.filter(p => p.orien !== tentarOrien);
 
-                for (let op of opostas) {
-                    const cruzes = [];
-                    for (let i = 0; i < 7; i++) {
-                        for (let j = 0; j < 7; j++) {
-                            if (op.norm[i] === candNorm[j]) {
-                                cruzes.push({ posOp: i, posCand: j });
+                if (tentarOrien === 'H') {
+                    const vWords = palavrasAtivas.filter(p => p.orien === 'V');
+                    const rowsPossiveis = [];
+
+                    for (let r = 0; r < 7; r++) {
+                        if (palavrasAtivas.some(p => p.orien === 'H' && p.fixedPos === r)) continue;
+
+                        let compativel = true;
+                        let cruzouComPeloMenosUm = false;
+
+                        for (let v of vWords) {
+                            if (candNorm[v.fixedPos] === v.norm[r]) {
+                                cruzouComPeloMenosUm = true;
+                            } else {
+                                compativel = false;
+                                break;
                             }
+                        }
+
+                        if (compativel && cruzouComPeloMenosUm) {
+                            rowsPossiveis.push(r);
                         }
                     }
 
-                    if (cruzes.length > 0) {
-                        const cEscolha = cruzes[Math.floor(Math.random() * cruzes.length)];
-                        const fixedPosCalculada = cEscolha.posOp;
+                    if (rowsPossiveis.length > 0) {
+                        const rEscolhida = rowsPossiveis[Math.floor(Math.random() * rowsPossiveis.length)];
+                        palavrasAtivas.push({
+                            id: pExtra,
+                            orien: 'H',
+                            fixedPos: rEscolhida,
+                            orig: listaDePalavrasOriginal[idxN],
+                            norm: candNorm
+                        });
 
-                        if (!palavrasAtivas.some(p => p.orien === tentarOrien && p.fixedPos === fixedPosCalculada)) {
-                            palavrasAtivas.push({
-                                id: pExtra,
-                                orien: tentarOrien,
-                                fixedPos: fixedPosCalculada,
-                                orig: listaDePalavrasOriginal[idxN],
-                                norm: listaDePalavrasNormalizada[idxN]
+                        vWords.forEach(v => {
+                            cruzamentos.push({
+                                row: rEscolhida,
+                                col: v.fixedPos,
+                                palHIdx: pExtra,
+                                posH: v.fixedPos,
+                                palVIdx: v.id,
+                                posV: rEscolhida
                             });
+                        });
 
-                            if (tentarOrien === 'H') {
-                                cruzamentos.push({
-                                    row: fixedPosCalculada,
-                                    col: op.fixedPos,
-                                    palHIdx: pExtra,
-                                    posH: op.fixedPos,
-                                    palVIdx: op.id,
-                                    posV: cEscolha.posOp
-                                });
+                        encaixou = true;
+                        palavrasEncaixadas++;
+                        break;
+                    }
+                } else {
+                    const hWords = palavrasAtivas.filter(p => p.orien === 'H');
+                    const colsPossiveis = [];
+
+                    for (let c = 0; c < 7; c++) {
+                        if (palavrasAtivas.some(p => p.orien === 'V' && p.fixedPos === c)) continue;
+
+                        let compativel = true;
+                        let cruzouComPeloMenosUm = false;
+
+                        for (let h of hWords) {
+                            if (candNorm[h.fixedPos] === h.norm[c]) {
+                                cruzouComPeloMenosUm = true;
                             } else {
-                                cruzamentos.push({
-                                    row: op.fixedPos,
-                                    col: fixedPosCalculada,
-                                    palHIdx: op.id,
-                                    posH: cEscolha.posOp,
-                                    palVIdx: pExtra,
-                                    posV: op.fixedPos
-                                });
+                                compativel = false;
+                                break;
                             }
-
-                            encaixou = true;
-                            palavrasEncaixadas++;
-                            break;
                         }
+
+                        if (compativel && cruzouComPeloMenosUm) {
+                            colsPossiveis.push(c);
+                        }
+                    }
+
+                    if (colsPossiveis.length > 0) {
+                        const cEscolhida = colsPossiveis[Math.floor(Math.random() * colsPossiveis.length)];
+                        palavrasAtivas.push({
+                            id: pExtra,
+                            orien: 'V',
+                            fixedPos: cEscolhida,
+                            orig: listaDePalavrasOriginal[idxN],
+                            norm: candNorm
+                        });
+
+                        hWords.forEach(h => {
+                            cruzamentos.push({
+                                row: h.fixedPos,
+                                col: cEscolhida,
+                                palHIdx: h.id,
+                                posH: cEscolhida,
+                                palVIdx: pExtra,
+                                posV: h.fixedPos
+                            });
+                        });
+
+                        encaixou = true;
+                        palavrasEncaixadas++;
+                        break;
                     }
                 }
-                if (encaixou) break;
             }
+            if (encaixou) break;
         }
 
         if (palavrasEncaixadas === qtd) {
@@ -675,7 +722,7 @@ document.addEventListener("keydown", (evento) => {
 function criarGridBase(tentativa, ehMini) {
     const container = document.createElement("div");
     container.className = `tabuleiro-tentativa ${ehMini ? 'mini' : 'principal'}`;
-    container.id = `tentativa-${tentativa}`;
+    container.id = ehMini ? `tentativa-${tentativa}` : 'grid-principal';
 
     const celulas = [];
 
