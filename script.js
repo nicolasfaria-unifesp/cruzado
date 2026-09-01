@@ -1,5 +1,6 @@
-let listaDePalavras = [];
-let palavraH, palavraV, posH, posV;
+let listaDePalavrasOriginal = [];
+let listaDePalavrasNormalizada = [];
+let palavraH, palavraV, palavraHNorm, palavraVNorm, posH, posV;
 let cruzamentoEncontrado = false;
 
 const maxTentativas = 6;
@@ -7,6 +8,11 @@ let linhaAtual = 0;
 let direcaoAtual = 1;
 let cursorIndex = 0;
 const gridsDOM = [];
+
+// Função auxiliar para remover acentos
+function normalizarTexto(str) {
+    return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ç/g, "c");
+}
 
 async function carregarDicionario() {
     try {
@@ -19,11 +25,13 @@ async function carregarDicionario() {
 
         const texto = await resposta.text();
         
-        listaDePalavras = texto
+        const palavrasFiltradas = texto
             .split(/\r?\n/)
             .map(p => p.trim())
-            .filter(p => p.length === 7)
-            .map(p => p.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+            .filter(p => p.length === 7);
+
+        listaDePalavrasOriginal = palavrasFiltradas.map(p => p.toUpperCase());
+        listaDePalavrasNormalizada = palavrasFiltradas.map(p => normalizarTexto(p));
 
         iniciarJogo();
     } 
@@ -34,15 +42,21 @@ async function carregarDicionario() {
 }
 
 function iniciarJogo() {
+    cruzamentoEncontrado = false;
     while (!cruzamentoEncontrado) {
-        palavraH = listaDePalavras[Math.floor(Math.random() * listaDePalavras.length)].toUpperCase();
-        palavraV = listaDePalavras[Math.floor(Math.random() * listaDePalavras.length)].toUpperCase();
+        const idxH = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+        const idxV = Math.floor(Math.random() * listaDePalavrasOriginal.length);
 
-        if (palavraH === palavraV) continue;
+        if (idxH === idxV) continue;
+
+        palavraH = listaDePalavrasOriginal[idxH];
+        palavraV = listaDePalavrasOriginal[idxV];
+        palavraHNorm = listaDePalavrasNormalizada[idxH];
+        palavraVNorm = listaDePalavrasNormalizada[idxV];
 
         for (let i = 0; i < 7; i++) {
             for (let j = 0; j < 7; j++) {
-                if (palavraH[i] === palavraV[j]) {
+                if (palavraHNorm[i] === palavraVNorm[j]) {
                     posH = i;
                     posV = j;
                     cruzamentoEncontrado = true;
@@ -69,7 +83,26 @@ function iniciarJogo() {
             max-width: 1200px;
             margin: 0 auto;
             box-sizing: border-box;
-            min-height: auto;
+        }
+
+        .topo-acoes {
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 10px;
+        }
+
+        .btn-ajuda {
+            background: #4a4a4a;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
         }
 
         .historico-tentativas {
@@ -141,7 +174,6 @@ function iniciarJogo() {
         .lugar-errado { background-color: #d3ad69 !important; color: white; border-color: #d3ad69; }
         .errada { background-color: #312a2c !important; color: white; border-color: #312a2c; }
 
-        /* Estilos do Teclado Virtual */
         #teclado {
             display: flex;
             flex-direction: column;
@@ -187,6 +219,64 @@ function iniciarJogo() {
             background-color: #5d5d5d;
         }
 
+        /* Modais Customizados */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-conteudo {
+            background: #222;
+            color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            font-family: sans-serif;
+            text-align: center;
+        }
+
+        .modal-conteudo h2 {
+            margin-top: 0;
+            color: #3aa394;
+        }
+
+        .modal-conteudo p, .modal-conteudo ul {
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #ddd;
+        }
+
+        .modal-conteudo ul {
+            padding-left: 20px;
+        }
+
+        .modal-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #3aa394;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .modal-btn:hover {
+            background-color: #2e8377;
+        }
+
         @media (max-width: 768px) {
             #tabuleiro {
                 padding: 10px 5px;
@@ -206,14 +296,6 @@ function iniciarJogo() {
                 gap: 10px;
             }
 
-            .historico-tentativas::-webkit-scrollbar {
-                height: 4px;
-            }
-            .historico-tentativas::-webkit-scrollbar-thumb {
-                background: #555;
-                border-radius: 2px;
-            }
-
             .tabuleiro-tentativa.principal {
                 grid-template-columns: repeat(7, 11vw);
                 grid-template-rows: repeat(7, 11vw);
@@ -222,33 +304,60 @@ function iniciarJogo() {
                 gap: 3px;
             }
 
-            .letra {
-                font-size: 18px;
-            }
-
-            .linha-teclado {
-                gap: 4px;
-            }
-
-            .tecla {
-                height: 45px;
-                font-size: 14px;
-                padding: 0;
-            }
-
-            .tecla.especial {
-                font-size: 11px;
-            }
+            .letra { font-size: 18px; }
+            .linha-teclado { gap: 4px; }
+            .tecla { height: 45px; font-size: 14px; padding: 0; }
+            .tecla.especial { font-size: 11px; }
         }
     `;
     document.head.appendChild(estiloGrid);
 
     criarTabuleiro();
+    exibirModalComoJogar();
 }
 
-// Processador unificado de entradas (teclado físico e virtual)
+function exibirModal(titulo, htmlConteudo, textoBotao = "Fechar", callback = null) {
+    const modalExistente = document.getElementById("modal-customizado");
+    if (modalExistente) modalExistente.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.id = "modal-customizado";
+
+    const conteudo = document.createElement("div");
+    conteudo.className = "modal-conteudo";
+
+    conteudo.innerHTML = `
+        <h2>${titulo}</h2>
+        <div>${htmlConteudo}</div>
+        <button class="modal-btn" id="btn-fechar-modal">${textoBotao}</button>
+    `;
+
+    overlay.appendChild(conteudo);
+    document.body.appendChild(overlay);
+
+    document.getElementById("btn-fechar-modal").addEventListener("click", () => {
+        overlay.remove();
+        if (callback) callback();
+    });
+}
+
+function exibirModalComoJogar() {
+    const regras = `
+        <p>Adivilhe as duas palavras cruzadas de 7 letras em 6 tentativas!</p>
+        <ul>
+            <li><strong>Verde:</strong> A letra está na posição correta.</li>
+            <li><strong>Amarelo:</strong> A letra faz parte da palavra, mas está na posição errada.</li>
+            <li><strong>Cinza:</strong> A letra não pertence à palavra.</li>
+            <li>Você pode trocar a orientação do cursor (horizontal/vertical) clicando nas caixas.</li>
+            <li><strong>Acentuação:</strong> Digite sem acento. Se a palavra correta possuir acento ou Ç, ela será exibida formatada ao confirmar!</li>
+        </ul>
+    `;
+    exibirModal("Como Jogar", regras, "Entendi");
+}
+
 function processarEntrada(tecla) {
-    if (linhaAtual >= maxTentativas || listaDePalavras.length === 0) return;
+    if (linhaAtual >= maxTentativas || listaDePalavrasOriginal.length === 0) return;
 
     if (tecla === "ENTER") {
         verificarPalavras();
@@ -401,7 +510,8 @@ function criarTecladoVirtual() {
 }
 
 function atualizarStatusTeclado(letra, novoStatus) {
-    const botao = document.querySelector(`.tecla[data-key="${letra}"]`);
+    const letraNorm = normalizarTexto(letra).toUpperCase();
+    const botao = document.querySelector(`.tecla[data-key="${letraNorm}"]`);
     if (!botao) return;
 
     const prioridade = { "correta": 3, "lugar-errado": 2, "errada": 1 };
@@ -418,6 +528,15 @@ function atualizarStatusTeclado(letra, novoStatus) {
 function criarTabuleiro() {
     const tabuleiro = document.getElementById("tabuleiro");
     
+    const topo = document.createElement("div");
+    topo.className = "topo-acoes";
+    const btnAjuda = document.createElement("button");
+    btnAjuda.className = "btn-ajuda";
+    btnAjuda.innerText = "?";
+    btnAjuda.onclick = exibirModalComoJogar;
+    topo.appendChild(btnAjuda);
+    tabuleiro.appendChild(topo);
+
     const areaEntrada = document.createElement("div");
     areaEntrada.id = "area-entrada";
     
@@ -427,6 +546,7 @@ function criarTabuleiro() {
 
     const gridPrincipal = criarGridBase(0, false);
     areaEntrada.appendChild(gridPrincipal.container);
+    gridsDOM.length = 0;
     gridsDOM.push(gridPrincipal.celulas);
 
     for (let t = 0; t < maxTentativas; t++) {
@@ -481,8 +601,8 @@ function obterCelulaAtual() {
 }
 
 function verificarPalavras() {
-    let tentativaH = "";
-    let tentativaV = "";
+    let tentativaHNorm = "";
+    let tentativaVNorm = "";
     
     const celulasAtuais = gridsDOM[0];
 
@@ -495,20 +615,29 @@ function verificarPalavras() {
             return;
         }
 
-        tentativaH += cH.innerText;
-        tentativaV += cV.innerText;
+        tentativaHNorm += cH.innerText;
+        tentativaVNorm += cV.innerText;
     }
 
-    if (!listaDePalavras.includes(tentativaH.toLowerCase()) || !listaDePalavras.includes(tentativaV.toLowerCase())) {
+    tentativaHNorm = normalizarTexto(tentativaHNorm);
+    tentativaVNorm = normalizarTexto(tentativaVNorm);
+
+    const idxDictH = listaDePalavrasNormalizada.indexOf(tentativaHNorm);
+    const idxDictV = listaDePalavrasNormalizada.indexOf(tentativaVNorm);
+
+    if (idxDictH === -1 || idxDictV === -1) {
         alert("Uma ou mais palavras não existem no dicionário!");
         return;
     }
 
+    const tentativaHExibicao = listaDePalavrasOriginal[idxDictH];
+    const tentativaVExibicao = listaDePalavrasOriginal[idxDictV];
+
     const minicard = document.getElementById(`tentativa-${linhaAtual}`);
 
-    const calcularStatus = (palavraDigitada, palavraCerta) => {
-        const secretArr = palavraCerta.split("");
-        const guessArr = palavraDigitada.split("");
+    const calcularStatus = (palavraDigitadaNorm, palavraCertaNorm) => {
+        const secretArr = palavraCertaNorm.split("");
+        const guessArr = palavraDigitadaNorm.split("");
         const status = Array(7).fill("errada");
 
         for (let i = 0; i < 7; i++) {
@@ -531,8 +660,8 @@ function verificarPalavras() {
         return status;
     };
 
-    const statusH = calcularStatus(tentativaH, palavraH);
-    const statusV = calcularStatus(tentativaV, palavraV);
+    const statusH = calcularStatus(tentativaHNorm, palavraHNorm);
+    const statusV = calcularStatus(tentativaVNorm, palavraVNorm);
 
     for (let r = 0; r < 7; r++) {
         for (let c = 0; c < 7; c++) {
@@ -544,7 +673,7 @@ function verificarPalavras() {
             const miniCell = minicard.querySelector(`[data-row="${r}"][data-col="${c}"]`);
             
             if (ehH && ehV) {
-                miniCell.innerText = tentativaH[c];
+                miniCell.innerText = tentativaHExibicao[c];
                 const stH = statusH[c];
                 const stV = statusV[r];
 
@@ -556,22 +685,28 @@ function verificarPalavras() {
                 }
 
                 miniCell.classList.add(statusFinal);
-                atualizarStatusTeclado(tentativaH[c], statusFinal);
+                atualizarStatusTeclado(tentativaHExibicao[c], statusFinal);
             } else if (ehH) {
-                miniCell.innerText = tentativaH[c];
+                miniCell.innerText = tentativaHExibicao[c];
                 miniCell.classList.add(statusH[c]);
-                atualizarStatusTeclado(tentativaH[c], statusH[c]);
+                atualizarStatusTeclado(tentativaHExibicao[c], statusH[c]);
             } else if (ehV) {
-                miniCell.innerText = tentativaV[r];
+                miniCell.innerText = tentativaVExibicao[r];
                 miniCell.classList.add(statusV[r]);
-                atualizarStatusTeclado(tentativaV[r], statusV[r]);
+                atualizarStatusTeclado(tentativaVExibicao[r], statusV[r]);
             }
         }
     }
 
-    if (tentativaH === palavraH && tentativaV === palavraV) {
-        setTimeout(() => alert("Parabéns, você venceu!"), 150);
+    if (tentativaHNorm === palavraHNorm && tentativaVNorm === palavraVNorm) {
         linhaAtual = maxTentativas;
+        setTimeout(() => {
+            exibirModal("Você Venceu! 🎉", `
+                <p>Parabéns! Você descobriu as duas palavras com sucesso.</p>
+                <p><strong>Palavra Horizontal:</strong> ${palavraH}</p>
+                <p><strong>Palavra Vertical:</strong> ${palavraV}</p>
+            `, "Jogar Novamente", () => location.reload());
+        }, 150);
         return;
     }
 
@@ -588,7 +723,13 @@ function verificarPalavras() {
         direcaoAtual = 1;
         atualizarFoco();
     } else {
-        setTimeout(() => alert(`Fim de jogo! As palavras eram: ${palavraH} e ${palavraV}`), 200);
+        setTimeout(() => {
+            exibirModal("Fim de Jogo! ❌", `
+                <p>Suas tentativas acabaram! Tente novamente.</p>
+                <p><strong>Palavra Horizontal:</strong> ${palavraH}</p>
+                <p><strong>Palavra Vertical:</strong> ${palavraV}</p>
+            `, "Jogar Novamente", () => location.reload());
+        }, 200);
     }
 }
 
