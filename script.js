@@ -45,187 +45,148 @@ async function carregarDicionario() {
 }
 
 function gerarCruzamentoValido(qtd) {
-    let sucesso = false;
-    let tentativasGerais = 0;
+    palavrasAtivas = [];
+    cruzamentos = [];
 
-    while (!sucesso && tentativasGerais < 1000) {
-        tentativasGerais++;
-        palavrasAtivas = [];
-        cruzamentos = [];
+    if (qtd === 2) {
+        while (true) {
+            const idx1 = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+            const r1 = Math.floor(Math.random() * 5) + 1;
+            const h1Norm = listaDePalavrasNormalizada[idx1];
 
-        const idx1 = Math.floor(Math.random() * listaDePalavrasOriginal.length);
-        const row1 = Math.floor(Math.random() * 5) + 1;
-        palavrasAtivas.push({
-            id: 0,
-            orien: 'H',
-            fixedPos: row1,
-            orig: listaDePalavrasOriginal[idx1],
-            norm: listaDePalavrasNormalizada[idx1]
-        });
-
-        let p2Valida = false;
-        for (let t = 0; t < 100; t++) {
-            const idx2 = Math.floor(Math.random() * listaDePalavrasOriginal.length);
-            if (idx2 === idx1) continue;
-
-            const cand2Norm = listaDePalavrasNormalizada[idx2];
-            const colsPossiveis = [];
-
+            const colunasValidas = [];
             for (let c = 0; c < 7; c++) {
-                if (palavrasAtivas[0].norm[c] === cand2Norm[row1]) {
-                    colsPossiveis.push(c);
+                const char = h1Norm[c];
+                const candV = [];
+                for (let i = 0; i < listaDePalavrasNormalizada.length; i++) {
+                    if (i !== idx1 && listaDePalavrasNormalizada[i][r1] === char) {
+                        candV.push(i);
+                    }
+                }
+                if (candV.length > 0) {
+                    colunasValidas.push({ col: c, candidatos: candV });
                 }
             }
 
-            if (colsPossiveis.length > 0) {
-                const colEscolhida = colsPossiveis[Math.floor(Math.random() * colsPossiveis.length)];
-                palavrasAtivas.push({
-                    id: 1,
-                    orien: 'V',
-                    fixedPos: colEscolhida,
-                    orig: listaDePalavrasOriginal[idx2],
-                    norm: cand2Norm
-                });
+            if (colunasValidas.length > 0) {
+                const escolhaCol = colunasValidas[Math.floor(Math.random() * colunasValidas.length)];
+                const idx2 = escolhaCol.candidatos[Math.floor(Math.random() * escolhaCol.candidatos.length)];
+                const c1 = escolhaCol.col;
 
-                cruzamentos.push({
-                    row: row1,
-                    col: colEscolhida,
-                    palHIdx: 0,
-                    posH: colEscolhida,
-                    palVIdx: 1,
-                    posV: row1
-                });
-
-                p2Valida = true;
-                break;
+                palavrasAtivas.push({ id: 0, orien: 'H', fixedPos: r1, orig: listaDePalavrasOriginal[idx1], norm: h1Norm });
+                palavrasAtivas.push({ id: 1, orien: 'V', fixedPos: c1, orig: listaDePalavrasOriginal[idx2], norm: listaDePalavrasNormalizada[idx2] });
+                cruzamentos.push({ row: r1, col: c1, palHIdx: 0, posH: c1, palVIdx: 1, posV: r1 });
+                return;
             }
-        }
-
-        if (!p2Valida) continue;
-        if (qtd === 2) { sucesso = true; break; }
-
-        let palavrasEncaixadas = 2;
-
-        for (let pExtra = 2; pExtra < qtd; pExtra++) {
-            let encaixou = false;
-            const tentarOrien = (pExtra % 2 === 0) ? 'H' : 'V';
-
-            for (let t = 0; t < 200; t++) {
-                const idxN = Math.floor(Math.random() * listaDePalavrasOriginal.length);
-                if (palavrasAtivas.some(p => p.orig === listaDePalavrasOriginal[idxN])) continue;
-
-                const candNorm = listaDePalavrasNormalizada[idxN];
-
-                if (tentarOrien === 'H') {
-                    const vWords = palavrasAtivas.filter(p => p.orien === 'V');
-                    const rowsPossiveis = [];
-
-                    for (let r = 0; r < 7; r++) {
-                        if (palavrasAtivas.some(p => p.orien === 'H' && p.fixedPos === r)) continue;
-
-                        let compativel = true;
-                        let cruzouComPeloMenosUm = false;
-
-                        for (let v of vWords) {
-                            if (candNorm[v.fixedPos] === v.norm[r]) {
-                                cruzouComPeloMenosUm = true;
-                            } else {
-                                compativel = false;
-                                break;
-                            }
-                        }
-
-                        if (compativel && cruzouComPeloMenosUm) {
-                            rowsPossiveis.push(r);
-                        }
-                    }
-
-                    if (rowsPossiveis.length > 0) {
-                        const rEscolhida = rowsPossiveis[Math.floor(Math.random() * rowsPossiveis.length)];
-                        palavrasAtivas.push({
-                            id: pExtra,
-                            orien: 'H',
-                            fixedPos: rEscolhida,
-                            orig: listaDePalavrasOriginal[idxN],
-                            norm: candNorm
-                        });
-
-                        vWords.forEach(v => {
-                            cruzamentos.push({
-                                row: rEscolhida,
-                                col: v.fixedPos,
-                                palHIdx: pExtra,
-                                posH: v.fixedPos,
-                                palVIdx: v.id,
-                                posV: rEscolhida
-                            });
-                        });
-
-                        encaixou = true;
-                        palavrasEncaixadas++;
-                        break;
-                    }
-                } else {
-                    const hWords = palavrasAtivas.filter(p => p.orien === 'H');
-                    const colsPossiveis = [];
-
-                    for (let c = 0; c < 7; c++) {
-                        if (palavrasAtivas.some(p => p.orien === 'V' && p.fixedPos === c)) continue;
-
-                        let compativel = true;
-                        let cruzouComPeloMenosUm = false;
-
-                        for (let h of hWords) {
-                            if (candNorm[h.fixedPos] === h.norm[c]) {
-                                cruzouComPeloMenosUm = true;
-                            } else {
-                                compativel = false;
-                                break;
-                            }
-                        }
-
-                        if (compativel && cruzouComPeloMenosUm) {
-                            colsPossiveis.push(c);
-                        }
-                    }
-
-                    if (colsPossiveis.length > 0) {
-                        const cEscolhida = colsPossiveis[Math.floor(Math.random() * colsPossiveis.length)];
-                        palavrasAtivas.push({
-                            id: pExtra,
-                            orien: 'V',
-                            fixedPos: cEscolhida,
-                            orig: listaDePalavrasOriginal[idxN],
-                            norm: candNorm
-                        });
-
-                        hWords.forEach(h => {
-                            cruzamentos.push({
-                                row: h.fixedPos,
-                                col: cEscolhida,
-                                palHIdx: h.id,
-                                posH: cEscolhida,
-                                palVIdx: pExtra,
-                                posV: h.fixedPos
-                            });
-                        });
-
-                        encaixou = true;
-                        palavrasEncaixadas++;
-                        break;
-                    }
-                }
-            }
-            if (encaixou) break;
-        }
-
-        if (palavrasEncaixadas === qtd) {
-            sucesso = true;
         }
     }
 
-    if (!sucesso) {
-        gerarCruzamentoValido(qtd);
+    if (qtd === 3) {
+        for (let t = 0; t < 500; t++) {
+            const r1 = Math.floor(Math.random() * 3) + 1;
+            const r2 = Math.floor(Math.random() * 3) + 4;
+            const c1 = Math.floor(Math.random() * 5) + 1;
+
+            const idxH1 = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+            const h1Norm = listaDePalavrasNormalizada[idxH1];
+
+            const candV1 = [];
+            for (let i = 0; i < listaDePalavrasNormalizada.length; i++) {
+                if (i !== idxH1 && listaDePalavrasNormalizada[i][r1] === h1Norm[c1]) {
+                    candV1.push(i);
+                }
+            }
+            if (candV1.length === 0) continue;
+            const idxV1 = candV1[Math.floor(Math.random() * candV1.length)];
+            const v1Norm = listaDePalavrasNormalizada[idxV1];
+
+            const candH2 = [];
+            for (let i = 0; i < listaDePalavrasNormalizada.length; i++) {
+                if (i !== idxH1 && i !== idxV1 && listaDePalavrasNormalizada[i][c1] === v1Norm[r2]) {
+                    candH2.push(i);
+                }
+            }
+            if (candH2.length === 0) continue;
+            const idxH2 = candH2[Math.floor(Math.random() * candH2.length)];
+            const h2Norm = listaDePalavrasNormalizada[idxH2];
+
+            palavrasAtivas.push({ id: 0, orien: 'H', fixedPos: r1, orig: listaDePalavrasOriginal[idxH1], norm: h1Norm });
+            palavrasAtivas.push({ id: 1, orien: 'V', fixedPos: c1, orig: listaDePalavrasOriginal[idxV1], norm: v1Norm });
+            palavrasAtivas.push({ id: 2, orien: 'H', fixedPos: r2, orig: listaDePalavrasOriginal[idxH2], norm: h2Norm });
+
+            cruzamentos.push({ row: r1, col: c1, palHIdx: 0, posH: c1, palVIdx: 1, posV: r1 });
+            cruzamentos.push({ row: r2, col: c1, palHIdx: 2, posH: c1, palVIdx: 1, posV: r2 });
+            return;
+        }
+    }
+
+    if (qtd === 4) {
+        for (let t = 0; t < 1000; t++) {
+            const r1 = Math.floor(Math.random() * 3) + 1;
+            const r2 = Math.floor(Math.random() * 2) + 4;
+            const c1 = Math.floor(Math.random() * 3) + 1;
+            const c2 = Math.floor(Math.random() * 2) + 4;
+
+            const idxH1 = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+            const h1Norm = listaDePalavrasNormalizada[idxH1];
+
+            const idxH2 = Math.floor(Math.random() * listaDePalavrasOriginal.length);
+            if (idxH2 === idxH1) continue;
+            const h2Norm = listaDePalavrasNormalizada[idxH2];
+
+            const charV1_r1 = h1Norm[c1];
+            const charV1_r2 = h2Norm[c1];
+
+            const candV1 = [];
+            for (let i = 0; i < listaDePalavrasNormalizada.length; i++) {
+                if (i !== idxH1 && i !== idxH2) {
+                    const w = listaDePalavrasNormalizada[i];
+                    if (w[r1] === charV1_r1 && w[r2] === charV1_r2) {
+                        candV1.push(i);
+                    }
+                }
+            }
+            if (candV1.length === 0) continue;
+
+            const charV2_r1 = h1Norm[c2];
+            const charV2_r2 = h2Norm[c2];
+
+            const candV2 = [];
+            for (let i = 0; i < listaDePalavrasNormalizada.length; i++) {
+                if (i !== idxH1 && i !== idxH2) {
+                    const w = listaDePalavrasNormalizada[i];
+                    if (w[r1] === charV2_r1 && w[r2] === charV2_r2) {
+                        candV2.push(i);
+                    }
+                }
+            }
+
+            const candV2Validos = candV1.length === 1 ? candV2.filter(idx => idx !== candV1[0]) : candV2;
+            if (candV2Validos.length === 0) continue;
+
+            const idxV1 = candV1[Math.floor(Math.random() * candV1.length)];
+            let idxV2 = candV2Validos[Math.floor(Math.random() * candV2Validos.length)];
+            if (idxV1 === idxV2) {
+                const altV2 = candV2Validos.filter(idx => idx !== idxV1);
+                if (altV2.length === 0) continue;
+                idxV2 = altV2[Math.floor(Math.random() * altV2.length)];
+            }
+
+            const v1Norm = listaDePalavrasNormalizada[idxV1];
+            const v2Norm = listaDePalavrasNormalizada[idxV2];
+
+            palavrasAtivas.push({ id: 0, orien: 'H', fixedPos: r1, orig: listaDePalavrasOriginal[idxH1], norm: h1Norm });
+            palavrasAtivas.push({ id: 1, orien: 'V', fixedPos: c1, orig: listaDePalavrasOriginal[idxV1], norm: v1Norm });
+            palavrasAtivas.push({ id: 2, orien: 'H', fixedPos: r2, orig: listaDePalavrasOriginal[idxH2], norm: h2Norm });
+            palavrasAtivas.push({ id: 3, orien: 'V', fixedPos: c2, orig: listaDePalavrasOriginal[idxV2], norm: v2Norm });
+
+            cruzamentos.push({ row: r1, col: c1, palHIdx: 0, posH: c1, palVIdx: 1, posV: r1 });
+            cruzamentos.push({ row: r2, col: c1, palHIdx: 2, posH: c1, palVIdx: 1, posV: r2 });
+            cruzamentos.push({ row: r1, col: c2, palHIdx: 0, posH: c2, palVIdx: 3, posV: r1 });
+            cruzamentos.push({ row: r2, col: c2, palHIdx: 2, posH: c2, palVIdx: 3, posV: r2 });
+
+            return;
+        }
     }
 }
 
